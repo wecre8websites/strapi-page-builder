@@ -1,0 +1,24 @@
+import { FC, SVGProps } from "react";
+
+const Redo: FC<SVGProps<SVGElement> & { enabled?: boolean }> = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="21"
+    height="21"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="2"
+    className="lucide lucide-redo2"
+    viewBox="0 0 24 24"
+    style={{
+      ...props.style,
+    }}
+  >
+    <path d="m15 14 5-5-5-5" fill="transparent" stroke={props.enabled ? "currentColor" : "#c0c0c0"}></path>
+    <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5 5.5 5.5 0 0 0 9.5 20H13" fill="transparent" stroke={props.enabled ? "currentColor" : "#c0c0c0"}></path>
+  </svg>
+);
+
+export default Redo;

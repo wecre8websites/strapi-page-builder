@@ -1,0 +1,17 @@
+{
+  "collectionName":"components_shared_page_builder_templates",
+  "info": {
+    "displayName": "Template",
+    "icon": "expand",
+    "description": "Page Builder template"
+  },
+  "options": {  },
+  "attributes": {
+    "template": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::strapi-page-builder.template",
+      "required": true
+    }
+  }
+}

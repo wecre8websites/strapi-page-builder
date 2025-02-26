@@ -1,0 +1,85 @@
+{
+  "plugin": {
+    "name": "Page Builder"
+  },
+  "settings": {
+    "header": {
+      "title": "Page Builder",
+      "subtitle": "Connect Page Builder to your web site and start editing, visually.",
+      "learn_more": "Learn more about Page Builder"
+    },
+    "card": {
+      "header": "Get started with Page Builder",
+      "subheader": "Learn how to get started with Page Builder and connect it to your website.",
+      "api_key": "Enter your API Key",
+      "no_api_key": "No API key? Sign up for free here",
+      "editor_url": "Enter your website's Page Builder URL",
+      "default_content_type": "Select default content type",
+      "default_content": "Select default content",
+      "accept": "Save and check the connection"
+    }
+  },
+  "editor": {
+    "header": {
+      "toggle_components": "Toggle components",
+      "toggle_settings": "Toggle settings",
+      "content_type": "Content type",
+      "content_type_info": "Only content types with a template relation will show here.",
+      "learn_more": "Learn more",
+      "select_content_type": "Select content type",
+      "template": "Template",
+      "select_template": "Select template",
+      "default": "Default",
+      "create_new": "Create new",
+      "preview_content": "Preview content",
+      "show_content_data": "Show content data",
+      "select_content": "Select content",
+      "locale": "Locale",
+      "select_locale": "Select locale",
+      "undo": "Undo",
+      "redo": "Redo",
+      "save": "Save"
+    },
+    "modals": {
+      "unsaved_changes": {
+        "header": "Unsaved changes",
+        "body": "You have unsaved changes. Are you sure you want to leave?",
+        "cancel": "Cancel",
+        "accept": "Continue"
+      },
+      "content_types": {
+        "header": "Available content types",
+        "body": "Only content types with a template relation will show here.",
+        "learn_more": "Learn more about the",
+        "learn_more_link": "https://docs.strapi.io/user-docs/content-type-builder",
+        "learn_more_link_label": "Content-Type Builder",
+        "accept": "Close"
+      },
+      "template": {
+        "header": "Create new template",
+        "body": "Create a new {content_type} template for Page Builder.",
+        "template_name": "Template name",
+        "template_name_placeholder": "Choose a name for your template",
+        "template_name_already_exists": "Template name already exists",
+        "duplicate_existing": "Duplicate an existing template",
+        "available_templates": "Available templates",
+        "blank": "Blank",
+        "cancel": "Cancel",
+        "accept": "Create"
+      },
+      "media": {
+        "header": "Select media",
+        "cancel": "Cancel",
+        "accept": "Select"
+      },
+      "content": {
+        "header": "Preview content data",
+        "body": "Content data can be added to templates dynamically using Handlebars variables such as {{ title }}.",
+        "learn_more": "Learn more about",
+        "learn_more_link": "https://pagebuilder.wc8.io/blogs/docs/dynamic-content",
+        "learn_more_link_label": "using dynamic content",
+        "accept": "Close"
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "version": "1.0.0",
+  "keywords": [],
+  "type": "commonjs",
+  "exports": {
+    "./package.json": "./package.json",
+    "./strapi-admin": {
+      "types": "./dist/admin/src/index.d.ts",
+      "source": "./admin/src/index.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    },
+    "./strapi-server": {
+      "types": "./dist/server/src/index.d.ts",
+      "source": "./server/src/index.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "strapi-plugin build",
+    "watch": "strapi-plugin watch",
+    "watch:link": "strapi-plugin watch:link",
+    "verify": "strapi-plugin verify",
+    "test:ts:front": "run -T tsc -p admin/tsconfig.json",
+    "test:ts:back": "run -T tsc -p server/tsconfig.json"
+  },
+  "dependencies": {
+    "@strapi/design-system": "^2.0.0-rc.14",
+    "@strapi/icons": "^2.0.0-rc.14",
+    "dot-object": "^2.1.5",
+    "lucide-react": "^0.475.0",
+    "react-intl": "^7.1.5",
+    "traverse": "^0.6.11",
+    "yup": "^1.6.1"
+  },
+  "devDependencies": {
+    "@strapi/sdk-plugin": "^5.3.0",
+    "@strapi/strapi": "^5.8.1",
+    "@strapi/typescript-utils": "^5.8.1",
+    "@types/dot-object": "^2.1.6",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "prettier": "^3.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.2",
+    "styled-components": "^6.1.14",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "@strapi/sdk-plugin": "^5.3.0",
+    "@strapi/strapi": "^5.8.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.2",
+    "styled-components": "^6.1.14"
+  },
+  "strapi": {
+    "kind": "plugin",
+    "name": "strapi-page-builder",
+    "displayName": "Page Builder",
+    "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually."
+  },
+  "name": "strapi-page-builder",
+  "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually.",
+  "license": "MIT",
+  "author": "Jonathan St-Jean <jonathan@wecre8websites.com>"
+}
