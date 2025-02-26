@@ -63,11 +63,11 @@
   },
   "strapi": {
     "kind": "plugin",
-    "name": "@wecre8websites/strapi-page-builder",
+    "name": "strapi-page-builder",
     "displayName": "Page Builder",
     "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually."
   },
-  "name": "strapi-page-builder",
+  "name": "@wecre8websites/strapi-page-builder",
   "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually.",
   "license": "MIT",
   "author": "Jonathan St-Jean <jonathan@wecre8websites.com>",
