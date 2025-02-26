@@ -37,7 +37,7 @@ The Page Builder plugin adds a visual page editor to Strapi, leting you drag and
 Setting up Page Builder is quick and easy.
 
 1. Sign up for a free Page Builder API key at [](https://pagebuilder.wc8.io)
-1. Add the companion [strapi-page-builder-react](https://www.npmjs.com/package/@wecre8websites/strapi-page-builder-react) package to your React app configure an editor URL.
+1. Add the companion [@wecre8websites/strapi-page-builder-react](https://www.npmjs.com/package/@wecre8websites/strapi-page-builder-react) package to your React app configure an editor URL.
 1. Add the new template relation field to one or more of your Strapi content types.
 1. Configure the Page Builder plugin with your API key, Editor URL and select the default content type and content.
 1. Open Page Builder from the sidebar menu and start building custom templates.
@@ -139,7 +139,7 @@ After configuring Page Builder, you must add a template relation field to any co
 
 ## Add the companion package to your React website
 
-For the Page Editor plugin to be able to connect to your site, you must add the companion [strapi-page-builder-react](https://www.npmjs.com/package/@wecre8websites/strapi-page-builder-react) package to your React app configure an editor URL.
+For the Page Editor plugin to be able to connect to your site, you must add the companion [@wecre8websites/strapi-page-builder-react](https://www.npmjs.com/package/@wecre8websites/strapi-page-builder-react) package to your React app configure an editor URL.
 
 
 ## 📝 License
