@@ -63,7 +63,7 @@
   },
   "strapi": {
     "kind": "plugin",
-    "name": "strapi-page-builder",
+    "name": "@wecre8websites/strapi-page-builder",
     "displayName": "Page Builder",
     "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually."
   },
