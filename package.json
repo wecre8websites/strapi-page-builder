@@ -70,5 +70,10 @@
   "name": "strapi-page-builder",
   "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually.",
   "license": "MIT",
-  "author": "Jonathan St-Jean <jonathan@wecre8websites.com>"
+  "author": "Jonathan St-Jean <jonathan@wecre8websites.com>",
+  "homepage": "https://github.com/wecre8websites/strapi-page-builder#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wecre8websites/strapi-page-builder"
+  }
 }
