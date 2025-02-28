@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.3",
   "keywords": [],
   "type": "commonjs",
   "exports": {
@@ -23,7 +23,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "strapi-plugin build",
+    "build": "strapi-plugin build --minify",
     "watch": "strapi-plugin watch",
     "watch:link": "strapi-plugin watch:link",
     "verify": "strapi-plugin verify",
