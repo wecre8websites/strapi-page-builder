@@ -1,6 +1,6 @@
 import { Core } from "@strapi/strapi";
 
-const getContentByTypeHandler = async (strapi: Core.Strapi, contentType: string, searchQuery?: string, locale?: string) => {
+const getContentByTypeHandler = async (strapi: Core.Strapi, contentType: string, searchQuery?: string, locale?: string, titleField?: string) => {
   //contentType sent by the client is the uid
   try {
     const foundContentType = strapi.contentTypes[contentType];
@@ -8,12 +8,17 @@ const getContentByTypeHandler = async (strapi: Core.Strapi, contentType: string,
       return []
     }
     let mainField: string;
-    try {
-      //Get mainField for title from configuration service
-      // const result = await strapi.service('plugin::content-manager.content-types').getContentTypeConfiguration({ uid: foundContentType.uid });
-      const serviceResult = await strapi.service('plugin::content-manager.content-types').findConfiguration({ uid: foundContentType.uid });
-      mainField = serviceResult?.settings?.mainField;
-    } catch (error) {
+    if (titleField) {
+      mainField = titleField;
+    } else {
+      try {
+        //Get mainField for title from configuration service
+        // const result = await strapi.service('plugin::content-manager.content-types').getContentTypeConfiguration({ uid: foundContentType.uid });
+        const serviceResult = await strapi.service('plugin::content-manager.content-types').findConfiguration({ uid: foundContentType.uid });
+        mainField = serviceResult?.settings?.mainField;
+      } catch (error) {
+        mainField = "id";
+      }
     }
     let request: any = {
       locale,

@@ -1,7 +1,7 @@
 import { Button, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, TextInput, Typography } from '@strapi/design-system';
 import { Code, PaperPlane, Question, WarningCircle } from '@strapi/icons';
-import { useAuth, useFetchClient } from '@strapi/strapi/admin';
-import { File, FileAudio, FileImage, FileVideo, Package } from 'lucide-react';
+import { useAuth, useFetchClient, Pagination } from '@strapi/strapi/admin';
+import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package } from 'lucide-react';
 import { ChangeEvent, FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
@@ -77,7 +77,7 @@ const sendIframeMessage = (iframe: HTMLIFrameElement, message: ParentMessageEven
 const HomePage = () => {
   const { formatMessage } = useIntl();
   const { t } = useTranslation();
-
+  const isDemo = useAuth('HomePage', (state) => !state.user || !!state.user?.roles.find(role => role.code.includes('page-builder-demo')));
   const permissions = useAuth('HomePage', (state) => state.permissions);
   const editorPermissions = useMemo(() => ({
     read: !!permissions.find(p => p.action === `plugin::${PLUGIN_ID}.editor.read`),
@@ -178,9 +178,10 @@ const HomePage = () => {
   }, []);
 
   const requestSave = useCallback(() => {
+    if (isDemo) return;
     setSaving(true);
     iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.SAVE_REQUESTED, data: {} });
-  }, [])
+  }, [isDemo])
 
 
   // useEffect(() => {
@@ -235,6 +236,7 @@ const HomePage = () => {
   }, [contentType, templateName, duplicateId, locale])
 
   const handleSave = useCallback(async (data: any) => {
+    if (isDemo) return;
     const { templateJson } = data;
     if (!editorPermissions.edit && !editorPermissions.modify) {
       console.error(`[Page Builder] Error saving page: insufficient permissions`);
@@ -260,7 +262,7 @@ const HomePage = () => {
     } finally {
       setSaving(false);
     }
-  }, [editorPermissions, templateId, handleCreateTemplate, locale]);
+  }, [editorPermissions, templateId, handleCreateTemplate, locale, isDemo]);
 
   const openModal = useCallback((type: ModalType, message: string = "") => {
     setModalOpen(type);
@@ -291,13 +293,13 @@ const HomePage = () => {
   }, []);
 
   const handlePopulate = useCallback(() => {
-    iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.POPULATE, data: { templateJson, contentData, isDefaultLocale, permissions: editorPermissions } });
+    iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.POPULATE, data: { templateJson, contentData, isDefaultLocale, permissions: editorPermissions, locale } });
     setTimeout(() => { setChildReady(true) }, 300);
-  }, [editorPermissions, templateJson, contentData, isDefaultLocale])
+  }, [editorPermissions, templateJson, contentData, isDefaultLocale, locale])
 
-  const handleRequestContent = useCallback(async (target: string, contentType: string, searchQuery?: string) => {
+  const handleRequestContent = useCallback(async (target: string, contentType: string, searchQuery?: string, titleField?: string) => {
     if (!iframeRef.current) return;
-    const { data } = await post(`/${PLUGIN_ID}/editor/content/${contentType}`, { searchQuery, locale });
+    const { data } = await post(`/${PLUGIN_ID}/editor/content/${contentType}`, { searchQuery, locale, titleField });
     sendIframeMessage(iframeRef.current, { type: ParentMessageType.RETURN_CONTENT, data: { target, content: data } });
   }, [locale])
 
@@ -324,8 +326,8 @@ const HomePage = () => {
           break;
         }
         case ChildMessageType.REQUEST_CONTENT: {
-          const { target, contentType, searchQuery } = message.data;
-          handleRequestContent(target, contentType, searchQuery);
+          const { target, contentType, searchQuery, titleField } = message.data;
+          handleRequestContent(target, contentType, searchQuery, titleField);
           break;
         }
       }
@@ -407,7 +409,7 @@ const HomePage = () => {
                 loading={loading}
                 endIcon={<PaperPlane />}
                 onClick={requestSave}
-                disabled={loading || saving || !isDirty || (!editorPermissions.edit && !editorPermissions.modify)}
+                disabled={isDemo || loading || saving || !isDirty || (!editorPermissions.edit && !editorPermissions.modify)}
               >
                 {t("editor.header.save")}
               </Button>
@@ -641,9 +643,13 @@ const MediaSelectModal: FC<{
       </Modal.Body>
       <Modal.Footer>
         <Modal.Close>
-          <Button variant="tertiary">{t("editor.modals.template.cancel")}</Button>
+          <Button variant="tertiary">{t("editor.modals.media.cancel")}</Button>
         </Modal.Close>
-        <Button variant="default" disabled={!selectedImageSrc} onClick={() => { selectedImageSrc && onAccept(target, selectedImageSrc) }}>{t("editor.modals.template.accept")}</Button>
+        <Flex gap={2}>
+          <Button variant="secondary" disabled={(pagination?.page || 0) <= 1} onClick={prevPage}><ArrowLeft /></Button>
+          <Button variant="secondary" disabled={(pagination?.page || 0) >= pagination?.pageCount} onClick={nextPage}><ArrowRight /></Button>
+        </Flex>
+        <Button variant="default" disabled={!selectedImageSrc} onClick={() => { selectedImageSrc && onAccept(target, selectedImageSrc) }}>{t("editor.modals.media.accept")}</Button>
       </Modal.Footer>
     </Modal.Content >
   </Modal.Root >

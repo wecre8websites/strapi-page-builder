@@ -192,8 +192,8 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     }
     return response
   },
-  async getStrapiContent(contentType: string, searchQuery?: string, locale?: string) {
-    const contentDocuments = await getContentByTypeHandler(strapi, contentType, searchQuery, locale);
+  async getStrapiContent(contentType: string, searchQuery?: string, locale?: string, titleField?: string) {
+    const contentDocuments = await getContentByTypeHandler(strapi, contentType, searchQuery, locale, titleField);
     return contentDocuments;
   },
   async saveTemplate(data: SaveTemplateRequest) {
@@ -326,6 +326,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
       }
       return response
     } catch (error) {
+      console.log(error)
       console.error(`[Page Builder] Error creating template ${(error as Error).message}`);
       return { error: (error as Error).message }
     }

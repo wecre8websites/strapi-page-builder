@@ -10,7 +10,7 @@
     "template": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "plugin::strapi-page-builder.template",
+      "target": "plugin::page-builder.template",
       "required": true
     }
   }

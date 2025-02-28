@@ -5,7 +5,7 @@ import { Context, } from 'koa';
 
 type State = {
   isAuthenticated: true;
-  user: Document;
+  user: any;
   userAbility: Ability;
 } | {
   isAuthenticated: false;

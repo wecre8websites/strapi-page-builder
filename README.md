@@ -30,7 +30,7 @@ Read the complete documentation at (https://pagebuilder.wc8.io)[https://pagebuil
 
 [Strapi](https://strapi.io/) is the leading open-source headless Content Management System. It’s 100% JavaScript, fully customizable and developer-first.
 
-## Overview: Visually edit and build your site using Strapi content and custom componets
+## Visually edit and build your site using Strapi content and custom componets
 
 The Page Builder plugin adds a visual page editor to Strapi, leting you drag and drop custom sections and connect them to CMS data.
 
@@ -58,7 +58,7 @@ Setting up Page Builder is quick and easy.
 
 ## 🖐 Requirements
 
-The requirements to install the Paypal Payments plugin is the same as those to install Strapi.
+The requirements to install the Page Builder plugin is the same as those to install Strapi.
 
 Please refer to the official Strapi installation requirement doc here: [Installation Requirements](https://docs.strapi.io/dev-docs/intro).
 

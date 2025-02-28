@@ -21,8 +21,8 @@ const editor = factories.createCoreController(`plugin::${PLUGIN_ID}.editor`, ({ 
   },
   async getStrapiContent(ctx) {
     const { contentType } = ctx.params
-    const { searchQuery, locale } = ctx.request.body
-    ctx.body = await strapi.plugin(PLUGIN_ID).service('editor').getStrapiContent(contentType, searchQuery, locale);
+    const { searchQuery, locale, titleField } = ctx.request.body
+    ctx.body = await strapi.plugin(PLUGIN_ID).service('editor').getStrapiContent(contentType, searchQuery, locale, titleField);
   },
   async saveTemplate(ctx) {
     const saveTemplateRequest: SaveTemplateRequest = {
