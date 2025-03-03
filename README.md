@@ -24,7 +24,7 @@
 
 ## Documentation
 
-Read the complete documentation at (https://pagebuilder.wc8.io)[https://pagebuilder.wc8.io]
+Read the complete documentation at https://pagebuilder.wc8.io
 
 ## Page Builder plugin for Strapi
 
