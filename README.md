@@ -18,7 +18,7 @@
 
 <br>
 
-<img style="width: 100%; height: auto;" src="static/pagebuilder_overview.gif" alt="Page Builder Overview" /> <br/>
+<img style="width: 100%; height: auto;" src="static/pagebuilder_animation.gif" alt="Page Builder Overview" /> <br/>
 
 <br/><br/>
 
