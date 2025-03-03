@@ -1,5 +1,5 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.6",
   "keywords": [],
   "type": "commonjs",
   "exports": {
@@ -42,10 +42,10 @@
   "devDependencies": {
     "@strapi/sdk-plugin": "^5.3.0",
     "@strapi/strapi": "^5.8.1",
-    "@strapi/typescript-utils": "^5.8.1",
+    "@strapi/typescript-utils": "^5.10.4",
     "@types/dot-object": "^2.1.6",
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
     "prettier": "^3.4.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -63,7 +63,7 @@
   },
   "strapi": {
     "kind": "plugin",
-    "name": "strapi-page-builder",
+    "name": "page-builder",
     "displayName": "Page Builder",
     "description": "Visual, drag and drop page editor for Strapi. Connect Page Builder to your web site and start editing your own custom components, visually."
   },

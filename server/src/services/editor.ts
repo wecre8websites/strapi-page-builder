@@ -83,16 +83,16 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         ...licenceData,
         defaultContentType,
         defaultContentId,
-        error: null
+        error: licenceData?.error ? `Unable to save settings: ${licenceData.error}` : null
       };
     } catch (error) {
-      console.error(`[Page Builder] Error saving settings ${(error as Error).message}`);
+      console.error(`[Page Builder] Error saving settings: ${(error as Error).message}`);
       return {
         apiKey,
         success: false,
         defaultContentType,
         defaultContentId,
-        error: 'Unable to save settings'
+        error: `Unable to save settings: ${(error as Error).message}`
       }
     }
   },

@@ -71,12 +71,13 @@ const SettingsPage = () => {
       });
       if (data.error) {
         setErrorMessage(data.error);
+      } else {
+        if (data.apiKey) setApiKey(data.apiKey);
+        if (data.url) setPreviewUrl(data.url);
+        if (data.defaultContentType) setDefaultContentType(defaultContentType);
+        if (data.defaultContentId) setDefaultContentId(defaultContentId);
+        setSaved(true);
       }
-      if (data.apiKey) setApiKey(data.apiKey);
-      if (data.url) setPreviewUrl(data.url);
-      if (data.defaultContentType) setDefaultContentType(defaultContentType);
-      if (data.defaultContentId) setDefaultContentId(defaultContentId);
-      setSaved(true);
     } catch (error) {
       console.error("[saveSettings]", error);
       setErrorMessage((error as Error).message);

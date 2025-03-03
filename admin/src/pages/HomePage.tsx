@@ -2,7 +2,7 @@ import { Button, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JS
 import { Code, PaperPlane, Question, WarningCircle } from '@strapi/icons';
 import { useAuth, useFetchClient, Pagination } from '@strapi/strapi/admin';
 import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package } from 'lucide-react';
-import { ChangeEvent, FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FC, JSX, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
 import SaveTemplateRequest from "../../../shared/types/SaveTemplateRequest";

@@ -8,23 +8,18 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
       section: 'plugins',
       displayName: 'Access Page Builder',
       uid: 'editor.read',
-      // subCategory: 'Page Builder',
       pluginName: PLUGIN_ID,
     },
     {
       section: 'plugins',
       displayName: 'Edit template content',
       uid: 'editor.edit',
-      // category: "Page Builder",
-      // subCategory: 'editor',
       pluginName: PLUGIN_ID,
     },
     {
       section: 'plugins',
       displayName: 'Add & remove template components',
       uid: 'editor.modify',
-      // category: "Page Builder",
-      // subCategory: 'Page Builder',
       pluginName: PLUGIN_ID,
     },
     {
