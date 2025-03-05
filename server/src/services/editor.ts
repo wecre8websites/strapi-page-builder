@@ -16,9 +16,6 @@ import getContentByTypeHandler from "./helpers/strapi/getContentByTypeHandler";
 import getAvailableLocalesHandler from "./helpers/strapi/getAvailableLocalesHandler";
 import saveLicenceSettings from "./helpers/license/saveLicenceSettings";
 
-const LICENCE_SERVER = "https://licence.wc8.io/strapi-page-builder"
-// const LICENCE_SERVER = `http://127.0.0.1:5001/licence-server-682e3/us-central1/routes/strapi-page-builder`
-
 const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ strapi }: { strapi: Core.Strapi }) => ({
   //Settings
   async getSettings() {

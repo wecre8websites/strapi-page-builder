@@ -76,7 +76,7 @@
         "header": "Preview content data",
         "body": "Content data can be added to templates dynamically using Handlebars variables such as {{ title }}.",
         "learn_more": "Learn more about",
-        "learn_more_link": "https://pagebuilder.wc8.io/blogs/docs/dynamic-content",
+        "learn_more_link": "https://pagebuilder.wc8.io/docs/project-structure/components/content-data",
         "learn_more_link_label": "using dynamic content",
         "accept": "Close"
       }
