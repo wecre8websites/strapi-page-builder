@@ -416,11 +416,9 @@ const HomePage = () => {
             </Flex>
           </Flex>
           <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "relative", display: "flex" }}>
-            {error || loading
-              ? <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "absolute", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#32324d33", transition: "opacity", opacity: (childReady ? 0 : 1), pointerEvents: (childReady ? "none" : "all"), cursor: (childReady ? "default" : "wait") }}>
-                {error ? <div>{error}</div> : <Loader />}
-              </div>
-              : null}
+            <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "absolute", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#32324d33", transition: "opacity", opacity: (childReady ? 0 : 1), pointerEvents: (childReady ? "none" : "all"), cursor: (childReady ? "default" : "wait") }}>
+              {error ? <div>{error}</div> : <Loader />}
+            </div>
             {tokenUrl ? <iframe ref={iframeRef} src={tokenUrl} style={{ width: "100%", height: "100%", borderWidth: 0, flexGrow: 1 }} /> : null}
           </div>
         </div>
