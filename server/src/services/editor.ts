@@ -94,7 +94,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     }
   },
   async getSettingsContentTypes() {
-    const contentTypes = strapi.contentTypes;
+    const contentTypes = strapi.contentTypes as Record<string, any>;
 
     let types: any[] = [];
 

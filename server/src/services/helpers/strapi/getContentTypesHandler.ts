@@ -4,7 +4,7 @@ import SimplifiedContentType from "../../../../../shared/types/SimplifiedContent
 import { PLUGIN_ID } from "../../../pluginId";
 
 const getContentTypesHandler = async (strapi: Core.Strapi, isSettings: boolean): Promise<SimplifiedContentType[] | SettingsContentType[]> => {
-  const contentTypes = strapi.contentTypes;
+  const contentTypes = strapi.contentTypes as Record<string, any>;
 
   let types: any[] = [];
 
