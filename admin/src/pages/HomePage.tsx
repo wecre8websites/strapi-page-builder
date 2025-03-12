@@ -1,7 +1,7 @@
 import { Button, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, TextInput, Typography } from '@strapi/design-system';
-import { Code, PaperPlane, Question, WarningCircle } from '@strapi/icons';
-import { useAuth, useFetchClient, Pagination } from '@strapi/strapi/admin';
-import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package } from 'lucide-react';
+import { Code, Question, WarningCircle } from '@strapi/icons';
+import { useAuth, useFetchClient } from '@strapi/strapi/admin';
+import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package, Save } from 'lucide-react';
 import { ChangeEvent, FC, JSX, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
@@ -346,8 +346,8 @@ const HomePage = () => {
   return (
     <Main>
       <DesignSystemProvider>
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-          <Flex direction="row" alignItems="center" justifyContent="space-between" paddingTop={2} paddingBottom={4} paddingLeft={2} paddingRight={3}>
+        <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor:"#f5f5f5" }}>
+          <Flex direction="row" alignItems="center" justifyContent="space-between" paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={3}>
             <Flex direction="row" alignItems="center" gap={0}>
               <IconButton label={t("editor.header.toggle_components")} onClick={requestToggleLeftSidebar} variant="ghost"><LeftSidebar style={{ fill: "#ffffff" }} /></IconButton>
               <IconButton label={t("editor.header.toggle_settings")} onClick={requestToggleRightSidebar} variant="ghost"><RightSidebar style={{ fill: "#ffffff" }} /></IconButton>
@@ -357,10 +357,10 @@ const HomePage = () => {
                 <Field.Label>
                   <Flex direction="row" alignItems="center" justifyContent="space-between" gap={2} style={{ width: "100%" }}>
                     {t("editor.header.content_type")}
-                    <IconButton onClick={() => openDialog("contentTypes")} label={<span>{t("editor.header.content_type_info")} <span onClick={() => setDialogOpen("contentTypes")} style={{ textDecoration: "underline", cursor: "pointer" }}>{t("editor.header.learn_more")}.</span></span>} variant="ghost" size={6}><Question style={{ fill: "##202020" }} /></IconButton>
+                    <IconButton onClick={() => openDialog("contentTypes")} label={<span>{t("editor.header.content_type_info")} <span onClick={() => setDialogOpen("contentTypes")} style={{ textDecoration: "underline", cursor: "pointer" }}>{t("editor.header.learn_more")}.</span></span>} variant="ghost" size={6}><Question height={12} style={{ fill: "##202020" }} /></IconButton>
                   </Flex>
                 </Field.Label>
-                <SingleSelect placeholder={t("editor.header.select_content_type")} value={contentType || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentType", value }))}>
+                <SingleSelect size="S" placeholder={t("editor.header.select_content_type")} value={contentType || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentType", value }))}>
                   {(contentTypes || []).map((contentType) => (<SingleSelectOption key={contentType.uid} value={contentType.uid}>{contentType.globalId}</SingleSelectOption>))}
                 </SingleSelect>
               </Field.Root>
@@ -368,7 +368,7 @@ const HomePage = () => {
                 <Field.Label>
                   {t("editor.header.template")}
                 </Field.Label>
-                <SingleSelect placeholder={t("editor.header.select_template")} value={!templateId ? "___default" : templateId} onChange={(value: string) => {
+                <SingleSelect size="S" placeholder={t("editor.header.select_template")} value={!templateId ? "___default" : templateId} onChange={(value: string) => {
                   if (value === "___new") confirmChange(() => openDialog("createNewTemplate"))
                   else confirmChange(() => handleChange({ target: "templateId", value }))
                 }}>
@@ -382,10 +382,10 @@ const HomePage = () => {
                 <Field.Label>
                   <Flex direction="row" alignItems="center" justifyContent="space-between" gap={2} style={{ width: "100%" }}>
                     {t("editor.header.preview_content")}
-                    <IconButton onClick={() => openModal("contentJson", JSON.stringify(contentData || {}, null, 2))} label={t("editor.header.show_content_data")} variant="ghost" size={6}><Code /></IconButton>
+                    <IconButton onClick={() => openModal("contentJson", JSON.stringify(contentData || {}, null, 2))} label={t("editor.header.show_content_data")} variant="ghost" size={6}><Code height={12}/></IconButton>
                   </Flex>
                 </Field.Label>
-                <SingleSelect placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>
+                <SingleSelect size="S" placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>
                   {(availableContent || []).map((content) => (<SingleSelectOption key={content.documentId} value={content.documentId}>{content.title}</SingleSelectOption>))}
                 </SingleSelect>
               </Field.Root>
@@ -393,7 +393,7 @@ const HomePage = () => {
                 <Field.Label>
                   {t("editor.header.locale")}
                 </Field.Label>
-                <SingleSelect placeholder={t("editor.header.select_locale")} value={locale || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "locale", value }))}>
+                <SingleSelect size="S" placeholder={t("editor.header.select_locale")} value={locale || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "locale", value }))}>
                   {(availableLocales || []).map((locale) => (<SingleSelectOption key={locale.code} value={locale.code}>{locale.name}</SingleSelectOption>))}
                 </SingleSelect>
               </Field.Root>
@@ -407,7 +407,7 @@ const HomePage = () => {
               <Button
                 variant={'default'}
                 loading={loading}
-                endIcon={<PaperPlane />}
+                endIcon={<Save size={16}/>}
                 onClick={requestSave}
                 disabled={isDemo || loading || saving || !isDirty || (!editorPermissions.edit && !editorPermissions.modify)}
               >
