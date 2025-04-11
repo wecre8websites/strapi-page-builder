@@ -16,7 +16,8 @@
       "editor_url": "Enter your website's Page Builder URL",
       "default_content_type": "Select default content type",
       "default_content": "Select default content",
-      "accept": "Save and check the connection"
+      "accept": "Save and check the connection",
+      "enforce_template_shape": "Enforce template shape for alternate locales"
     }
   },
   "editor": {

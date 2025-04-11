@@ -1,57 +1,54 @@
-import { getTranslation } from './utils/getTranslation';
-import { PLUGIN_ID } from './pluginId';
 import { Initializer } from './components/Initializer';
 import { PluginIcon } from './components/PluginIcon';
+import { App } from './pages/App';
+import SettingsPage from './pages/SettingsPage';
+import { PLUGIN_ID } from './pluginId';
 import { prefixPluginTranslations } from './utils/prefixPluginTranslations';
-import Logo from './icons/Logo';
+
+const name = "page-builder"
+const displayName = "Page Builder"
+
 export default {
   register(app: any) {
+    app.createSettingSection(
+      'global', // id of the section to add the link in
+      [
+        {
+          id: PLUGIN_ID,
+          intlLabel: {
+            id: `${PLUGIN_ID}.plugin.name`,
+            defaultMessage: `${displayName} plugin`,
+          },
+          to: `/settings/${PLUGIN_ID}`,
+          Component() {
+            return SettingsPage
+          },
+          // licenseOnly: true,
+          permissions: [{ action: `plugin::${PLUGIN_ID}.settings.modify`, subject: null }]
+        },
+      ]
+    );
+
     app.addMenuLink({
-      to: `plugins/${PLUGIN_ID}/editor`,
-      icon: Logo,
+      to: `/plugins/${PLUGIN_ID}`,
+      icon: PluginIcon,
       intlLabel: {
         id: `${PLUGIN_ID}.plugin.name`,
-        defaultMessage: PLUGIN_ID,
+        defaultMessage: displayName,
       },
-      Component: async () => {
-        const { App } = await import('./pages/App');
-        return App;
+      Component() {
+        return App
       },
-      permissions: [
-        {
-          action: `plugin::${PLUGIN_ID}.editor.read`,
-          subject: null
-        }
-      ]
+      permissions: [{ action: `plugin::${PLUGIN_ID}.editor.read`, subject: null }],
+      position: 0,
     });
 
     app.registerPlugin({
       id: PLUGIN_ID,
       initializer: Initializer,
       isReady: false,
-      name: PLUGIN_ID,
+      name,
     });
-
-    // app.createSettingSection(
-    //   {
-    //     id: PLUGIN_ID,
-    //     intlLabel: { id: `${PLUGIN_ID}.plugin.name`, defaultMessage: 'Page Builder' },
-    //   },
-    //   [
-    //     {
-    //       intlLabel: {
-    //         id: `${PLUGIN_ID}.plugin.name`,
-    //         defaultMessage: 'Settings',
-    //       },
-    //       id: 'settings',
-    //       to: `/settings/${PLUGIN_ID}`,
-    //       Component: async () => {
-    //         const { SettingsPage } = await import('./pages/Settings');
-    //         return SettingsPage;
-    //       },
-    //     },
-    //   ],
-    // )
   },
 
   async registerTrads({ locales }: { locales: string[] }) {
@@ -67,30 +64,24 @@ export default {
     );
   },
 
-  bootstrap(app: any) {
-    app.addSettingsLinks(
-      'global', // id of the section to add the link in
-      [
-        {
-          intlLabel: {
-            id: `${PLUGIN_ID}.plugin.name`,
-            defaultMessage: 'Page Builder',
-          },
-          id: 'settings',
-          to: `/settings/${PLUGIN_ID}`,
-          Component: async () => {
-            const { SettingsPage } = await import('./pages/Settings');
-            return SettingsPage;
-          },
-          licenseOnly: true,
-          permissions: [
-            {
-              action: `plugin::${PLUGIN_ID}.settings.modify`,
-              subject: null
-            }
-          ]
-        },
-      ]
-    )
-  }
+  // bootstrap(app: any) {
+  //   app.addSettingsLinks(
+  //     'global', // id of the section to add the link in
+  //     [
+  //       {
+  //         id: 'settings',
+  //         intlLabel: {
+  //           id: `${PLUGIN_ID}.plugin.name`,
+  //           defaultMessage: 'Page Builder',
+  //         },
+  //         to: `/settings/${PLUGIN_ID}`,
+  //         Component() {
+  //           return SettingsPage
+  //         },
+  //         licenseOnly: true,
+  //         permissions: [{ action: `plugin::${PLUGIN_ID}.settings.modify`, subject: null }]
+  //       },
+  //     ]
+  //   )
+  // }
 };

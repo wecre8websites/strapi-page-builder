@@ -68,5 +68,17 @@ export default {
       sortable: true,
       configurable: true,
     },
+    enforceTemplateShape: {
+      pluginOptions: {
+        i18n: {
+          localized: false,
+        },
+      },
+      type: 'boolean',
+      unique: false,
+      required: false,
+      visible: true,
+      configurable: true,
+    },
   }
 }

@@ -1,12 +1,7 @@
-import { Box, Button, DesignSystemProvider, Field, Flex, Grid, LinkButton, SingleSelect, SingleSelectOption, Tooltip, Typography } from '@strapi/design-system';
-import { ArrowClockwise, Check, Cross, ExternalLink } from '@strapi/icons';
-import {
-  Layouts,
-  Page,
-  useAuth,
-  useFetchClient
-} from '@strapi/strapi/admin';
-import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { Box, Button, DesignSystemProvider, Field, Flex, Grid, LinkButton, SingleSelect, SingleSelectOption, Typography } from '@strapi/design-system';
+import { Check, Cross, ExternalLink } from '@strapi/icons';
+import { Layouts, Page, useFetchClient, useRBAC } from '@strapi/strapi/admin';
+import { useCallback, useEffect, useState } from 'react';
 import SimplifiedContentType from '../../../shared/types/SimplifiedContentType';
 import useTranslation from '../hooks/useTranslation';
 import Logo from '../icons/Logo';
@@ -36,15 +31,7 @@ const styles = {
   }
 }
 
-const TerminalCommand: FC<{ command: string }> = ({ command }) => {
-  const isDarkMode = window.localStorage.getItem('STRAPI_THEME') === 'dark';
-  return <div style={{ ...styles.terminal, ...(isDarkMode ? styles.darkmode : {}) }}>
-    {/* <span>&gt;</span> */}
-    <span>{command}</span>
-  </div>
-}
-
-const SettingsPage = () => {
+const SettingsPageInner = () => {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState("");
   const [previewUrl, setPreviewUrl] = useState("http://localhost:3000/editor");
@@ -57,6 +44,7 @@ const SettingsPage = () => {
   const [defaultContentId, setDefaultContentId] = useState("");
   const [availableContent, setAvailableContent] = useState<{ documentId: string, title: string }[]>([]);
   const [contentLoading, setContentLoading] = useState(false);
+  const [enforceTemplateShape, setEnforceTemplateShape] = useState(true);
 
   const saveSettings = useCallback(async () => {
     try {
@@ -67,15 +55,18 @@ const SettingsPage = () => {
         apiKey,
         url: previewUrl || undefined,
         defaultContentType,
-        defaultContentId
+        defaultContentId,
+        enforceTemplateShape
       });
       if (data.error) {
         setErrorMessage(data.error);
       } else {
         if (data.apiKey) setApiKey(data.apiKey);
-        if (data.url) setPreviewUrl(data.url);
+        if (data.web_url) setPreviewUrl(data.web_url);
         if (data.defaultContentType) setDefaultContentType(defaultContentType);
         if (data.defaultContentId) setDefaultContentId(defaultContentId);
+        setEnforceTemplateShape(data.enforceTemplateShape ?? true);
+        setErrorMessage("");
         setSaved(true);
       }
     } catch (error) {
@@ -84,18 +75,21 @@ const SettingsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiKey, previewUrl, defaultContentType, defaultContentId]);
+  }, [apiKey, previewUrl, defaultContentType, defaultContentId, enforceTemplateShape]);
 
   const getSettings = useCallback(async () => {
     try {
       const { data } = await get(`/${PLUGIN_ID}/settings`);
-      const { apiKey, url, defaultContentType, defaultContentId } = data;
+      const { apiKey, web_url, defaultContentType, defaultContentId, enforceTemplateShape } = data;
       if (apiKey) setApiKey(apiKey);
-      if (url) setPreviewUrl(url);
+      if (web_url) setPreviewUrl(web_url);
       if (defaultContentType) setDefaultContentType(defaultContentType);
       if (defaultContentId) setDefaultContentId(defaultContentId);
+      setEnforceTemplateShape(enforceTemplateShape ?? true);
+      setErrorMessage("");
     } catch (error) {
       console.error("[getSettings]", error);
+      setErrorMessage((error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -138,13 +132,16 @@ const SettingsPage = () => {
     getContentByType(defaultContentType);
   }, [defaultContentType])
 
-  const permissions = useAuth('Settings', (state) => state.permissions);
-  const settingsPermission = useMemo(() => !!permissions.find(p => p.action === `plugin::${PLUGIN_ID}.settings.modify`), [permissions])
+  const { allowedActions, isLoading, error } = useRBAC([{ action: `plugin::${PLUGIN_ID}.settings.modify`, subject: null }])
+  // const permissions = useAuth('SettingsPage', (state) => state.permissions);
+  // const canModify = useMemo(() => !!permissions.find(p => p.action === `plugin::${PLUGIN_ID}.settings.modify`), [permissions])
 
-  if (!settingsPermission) return <Page.NoPermissions />
+  if (isLoading) return <Page.Loading />
+  if (error) return <Page.Error />;
+  if (!allowedActions.canModify) return <Page.NoPermissions />;
 
   return (
-    <DesignSystemProvider>
+    <Layouts.Root>
       <Layouts.Header
         title={t("settings.header.title")}
         subtitle={t("settings.header.subtitle")}
@@ -163,6 +160,7 @@ const SettingsPage = () => {
       </Layouts.Header>
 
       <Layouts.Content>
+        {/* <pre>{JSON.stringify(allowedActions || "{}", null, 2)}</pre> */}
         <Box padding={6} paddingLeft={8} paddingRight={8} shadow="filterShadow" background="neutral0" marginBottom={6}>
           <Flex gap={2} direction="row" style={{ alignItems: "center" }}>
             <Logo width={75} height={75} />
@@ -227,6 +225,17 @@ const SettingsPage = () => {
                       </SingleSelect>
                     </Field.Root>
                   </Box>
+                  <Box paddingRight={6}>
+                    <Field.Root name="enforceTemplateShape" style={{ flexGrow: 1 }}>
+                      <Field.Label>
+                        {t("settings.card.enforce_template_shape")}
+                      </Field.Label>
+                      <SingleSelect style={{ flexGrow: 1 }} loading={contentLoading} disabled={!defaultContentType} value={enforceTemplateShape} onChange={(e: "true" | "false") => setEnforceTemplateShape(e === "true")}>
+                        <SingleSelectOption value={"true"}>True</SingleSelectOption>
+                        <SingleSelectOption value={"false"}>False</SingleSelectOption>
+                      </SingleSelect>
+                    </Field.Root>
+                  </Box>
                 </Flex>
                 <Flex paddingTop={6} direction="column" gap={2} alignItems="start">
                   <Button
@@ -245,8 +254,14 @@ const SettingsPage = () => {
           </Grid.Root>
         </Box>
       </Layouts.Content>
-    </DesignSystemProvider>
+    </Layouts.Root>
   );
 };
 
-export { SettingsPage };
+export default function SettingsPage() {
+  return <DesignSystemProvider>
+    <SettingsPageInner />
+  </DesignSystemProvider>
+}
+
+// export { SettingsPage };
