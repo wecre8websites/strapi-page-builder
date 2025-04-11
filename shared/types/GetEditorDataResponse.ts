@@ -15,7 +15,8 @@ type GetEditorDataResponse = {
   errors: {
     licenceError: string | null;
     contentError: string | null;
-  }
+  },
+  enforceTemplateShape?: boolean
 }
 
 export default GetEditorDataResponse;

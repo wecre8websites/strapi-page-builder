@@ -24,13 +24,15 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     const apiKey = settings?.apiKey;
     const defaultContentType = settings?.defaultContentType;
     const defaultContentId = settings?.defaultContentId;
+    const enforceTemplateShape = settings?.enforceTemplateShape ?? true;
     if (apiKey) {
       const licenceData = await getLicenceSettings(apiKey);
       return {
         apiKey,
         ...licenceData,
         defaultContentType,
-        defaultContentId
+        defaultContentId,
+        enforceTemplateShape
       }
     }
     return {
@@ -38,21 +40,24 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
       url: "",
       defaultContentType,
       defaultContentId,
+      enforceTemplateShape,
       error: null
     };
   },
-  async saveSettings(data: { apiKey?: string, url?: string, defaultContentType?: string, defaultContentId?: string }) {
+  async saveSettings(data: { apiKey?: string, url?: string, defaultContentType?: string, defaultContentId?: string, enforceTemplateShape?: boolean }) {
     let queryData = await strapi.db.query(`plugin::${PLUGIN_ID}.editor`).findMany()
     const settings = queryData?.[0];
     const apiKey = data?.apiKey || settings?.apiKey;
     const url = data?.url || undefined
     const defaultContentType = data?.defaultContentType || undefined
     const defaultContentId = data?.defaultContentId || undefined
+    const enforceTemplateShape = data?.enforceTemplateShape ?? (settings.enforceTemplateShape ?? true);
     if (!apiKey) return {
       apiKey: "",
       success: false,
       defaultContentType,
       defaultContentId,
+      enforceTemplateShape,
       error: 'API Key is required'
     }
     try {
@@ -64,6 +69,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
             apiKey,
             defaultContentType,
             defaultContentId,
+            enforceTemplateShape
           }
         });
       } else {
@@ -72,6 +78,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
             apiKey,
             defaultContentType,
             defaultContentId,
+            enforceTemplateShape
           }
         });
       }
@@ -80,6 +87,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         ...licenceData,
         defaultContentType,
         defaultContentId,
+        enforceTemplateShape,
         error: licenceData?.error ? `Unable to save settings: ${licenceData.error}` : null
       };
     } catch (error) {
@@ -89,6 +97,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         success: false,
         defaultContentType,
         defaultContentId,
+        enforceTemplateShape,
         error: `Unable to save settings: ${(error as Error).message}`
       }
     }
@@ -141,7 +150,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
 
     const locales = await getAvailableLocalesHandler(strapi);
 
-    const { apiKey, contentType: settingsContentType, contentId: settingsContentId } = await getSettingsHandler(strapi);
+    const { apiKey, contentType: settingsContentType, contentId: settingsContentId, enforceTemplateShape } = await getSettingsHandler(strapi);
     selectedContentType = selectedContentType || settingsContentType;
     selectedContentId = selectedContentId || settingsContentId;
 
@@ -179,6 +188,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
       contentId: selectedContentId,
       contentData,
       contentDocuments,
+      enforceTemplateShape,
       templateId: selectedTemplateId,
       templateJson,
       templateDocuments,
@@ -269,6 +279,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         }
         case "update": {
           const isDefaultLocale = defaultLocale === data?.locale || data?.locale === undefined;
+          const { enforceTemplateShape } = await getSettingsHandler(strapi);
           if (isDefaultLocale) {
             let parentJson = { ...defaultJson, ...data.templateJson }
             result = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
@@ -277,39 +288,50 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
               //@ts-ignore
               data: { json: parentJson }
             });
-            const remainingLocales = locales.filter((locale) => locale.code !== data?.locale).map((locale) => locale.code);
-            //For each remaining locale, get the tramplateJson for that locale, traverse through the object and insert or remove any differences in key before saving
-            for (const locale of remainingLocales) {
-              const localeDoc = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.findOne({
-                documentId: data.templateId,
-                locale,
-                populate: "*"
-              });
-              const childJson = localeDoc?.json;
-              const matchedJson = matchTemplateShape(parentJson, childJson);
-              let json = { ...defaultJson, ...matchedJson }
-              await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
-                documentId: data.templateId,
-                locale,
-                //@ts-ignore
-                data: { json }
-              });
+            if (!!enforceTemplateShape) {
+              const remainingLocales = locales.filter((locale) => locale.code !== data?.locale).map((locale) => locale.code);
+              //For each remaining locale, get the tramplateJson for that locale, traverse through the object and insert or remove any differences in key before saving
+              for (const locale of remainingLocales) {
+                const localeDoc = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.findOne({
+                  documentId: data.templateId,
+                  locale,
+                  populate: "*"
+                });
+                const childJson = localeDoc?.json;
+                const matchedJson = matchTemplateShape(parentJson, childJson);
+                let json = { ...defaultJson, ...matchedJson }
+                await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
+                  documentId: data.templateId,
+                  locale,
+                  //@ts-ignore
+                  data: { json }
+                });
+              }
             }
           } else if (data?.locale) {
-            const childJson = { ...defaultJson, ...data.templateJson }
-            const parentDoc = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.findOne({
-              documentId: data.templateId,
-              locale: defaultLocale,
-              populate: "*"
-            });
-            const parentJson = parentDoc?.json;
-            const matchedJson = matchTemplateShape(parentJson, childJson);
-            result = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
-              documentId: data.templateId,
-              locale: data.locale,
-              //@ts-ignore
-              data: { json: matchedJson }
-            });
+            if (!!enforceTemplateShape) {
+              const childJson = { ...defaultJson, ...data.templateJson }
+              const parentDoc = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.findOne({
+                documentId: data.templateId,
+                locale: defaultLocale,
+                populate: "*"
+              });
+              const parentJson = parentDoc?.json;
+              const matchedJson = matchTemplateShape(parentJson, childJson);
+              result = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
+                documentId: data.templateId,
+                locale: data.locale,
+                //@ts-ignore
+                data: { json: matchedJson }
+              });
+            } else {
+              result = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
+                documentId: data.templateId,
+                locale: data.locale,
+                //@ts-ignore
+                data: { json: data.templateJson }
+              });
+            }
           }
           break;
         }
@@ -323,7 +345,6 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
       }
       return response
     } catch (error) {
-      console.log(error)
       console.error(`[Page Builder] Error creating template ${(error as Error).message}`);
       return { error: (error as Error).message }
     }

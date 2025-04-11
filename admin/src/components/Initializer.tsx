@@ -10,7 +10,7 @@ const Initializer = ({ setPlugin }: InitializerProps) => {
   const ref = useRef(setPlugin);
 
   useEffect(() => {
-    ref.current(PLUGIN_ID);
+    ref.current?.(PLUGIN_ID);
   }, []);
 
   return null;

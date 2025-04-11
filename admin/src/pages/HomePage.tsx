@@ -1,9 +1,8 @@
 import { Button, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, TextInput, Typography } from '@strapi/design-system';
 import { Code, Question, WarningCircle } from '@strapi/icons';
-import { useAuth, useFetchClient } from '@strapi/strapi/admin';
+import { Page, useFetchClient, useRBAC } from '@strapi/strapi/admin';
 import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package, Save } from 'lucide-react';
 import { ChangeEvent, FC, JSX, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useIntl } from 'react-intl';
 import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
 import SaveTemplateRequest from "../../../shared/types/SaveTemplateRequest";
 import SimplifiedContentType from '../../../shared/types/SimplifiedContentType';
@@ -74,22 +73,25 @@ const sendIframeMessage = (iframe: HTMLIFrameElement, message: ParentMessageEven
   iframe?.contentWindow?.postMessage(message, '*');
 }
 
-const HomePage = () => {
-  const { formatMessage } = useIntl();
+const HomePageInner = () => {
   const { t } = useTranslation();
-  const isDemo = useAuth('HomePage', (state) => !state.user || !!state.user?.roles.find(role => role.code.includes('page-builder-demo')));
-  const permissions = useAuth('HomePage', (state) => state.permissions);
-  const editorPermissions = useMemo(() => ({
-    read: !!permissions.find(p => p.action === `plugin::${PLUGIN_ID}.editor.read`),
-    edit: !!permissions.find(p => p.action === `plugin::${PLUGIN_ID}.editor.edit`),
-    modify: !!permissions.find(p => p.action === `plugin::${PLUGIN_ID}.editor.modify`),
-  }), [permissions])
+  const { allowedActions, isLoading, error: rbacError } = useRBAC([
+    { action: `plugin::${PLUGIN_ID}.editor.read`, subject: null },
+    { action: `plugin::${PLUGIN_ID}.editor.edit`, subject: null },
+    { action: `plugin::${PLUGIN_ID}.editor.modify`, subject: null },
+  ])
+  const permissions = useMemo(() => ({
+    read: allowedActions.canRead,
+    edit: allowedActions.canEdit,
+    modify: allowedActions.canModify,
+  }), [allowedActions])
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [error, setError] = useState<string>("");
-  const [apiKey, setApiKey] = useState<string>("");
   const [childReady, setChildReady] = useState<boolean>(false);
   const [licenceToken, setLicenceToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [enforceTemplateShape, setEnforceTemplateShape] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [contentTypes, setContentTypes] = useState<SimplifiedContentType[]>([]);
@@ -134,12 +136,13 @@ const HomePage = () => {
 
   const getEditorData = useCallback(async (data?: { contentType?: string, templateId?: string, contentId?: string, locale?: string }) => {
     const { data: editorData } = await post(`/${PLUGIN_ID}/editor`, data) as { data: GetEditorDataResponse };
-    const { token, url, locales, contentTypes, contentType, contentId, contentData, templateId, templateJson, templateDocuments, contentDocuments, errors } = editorData
+    const { token, url, locales, contentTypes, contentType, contentId, contentData, templateId, templateJson, templateDocuments, contentDocuments, errors, enforceTemplateShape } = editorData
     if (errors.licenceError) {
       setError(errors.licenceError)
       return
     }
     if (token) setLicenceToken(token);
+    setEnforceTemplateShape(enforceTemplateShape ?? true);
     if (url) setUrl(url);
     if (locales) {
       setAvailableLocales(locales);
@@ -178,10 +181,11 @@ const HomePage = () => {
   }, []);
 
   const requestSave = useCallback(() => {
-    if (isDemo) return;
+    // if (isDemo) return;
     setSaving(true);
     iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.SAVE_REQUESTED, data: {} });
-  }, [isDemo])
+    // }, [isDemo])
+  }, [])
 
 
   // useEffect(() => {
@@ -236,9 +240,9 @@ const HomePage = () => {
   }, [contentType, templateName, duplicateId, locale])
 
   const handleSave = useCallback(async (data: any) => {
-    if (isDemo) return;
+    // if (isDemo) return;
     const { templateJson } = data;
-    if (!editorPermissions.edit && !editorPermissions.modify) {
+    if (!allowedActions.canEdit && !allowedActions.canModify) {
       console.error(`[Page Builder] Error saving page: insufficient permissions`);
       return
     }
@@ -262,7 +266,7 @@ const HomePage = () => {
     } finally {
       setSaving(false);
     }
-  }, [editorPermissions, templateId, handleCreateTemplate, locale, isDemo]);
+  }, [allowedActions, templateId, handleCreateTemplate, locale, /*isDemo*/]);
 
   const openModal = useCallback((type: ModalType, message: string = "") => {
     setModalOpen(type);
@@ -293,9 +297,9 @@ const HomePage = () => {
   }, []);
 
   const handlePopulate = useCallback(() => {
-    iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.POPULATE, data: { templateJson, contentData, isDefaultLocale, permissions: editorPermissions, locale } });
+    iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.POPULATE, data: { templateJson, contentData, isDefaultLocale, permissions, locale, enforceTemplateShape } });
     setTimeout(() => { setChildReady(true) }, 300);
-  }, [editorPermissions, templateJson, contentData, isDefaultLocale, locale])
+  }, [permissions, templateJson, contentData, isDefaultLocale, locale, enforceTemplateShape])
 
   const handleRequestContent = useCallback(async (target: string, contentType: string, searchQuery?: string, titleField?: string) => {
     if (!iframeRef.current) return;
@@ -343,179 +347,181 @@ const HomePage = () => {
     getEditorData();
   }, [])
 
+  if (isLoading) return <Page.Loading />
+  if (rbacError) return <Page.Error />;
+  // if (!allowedActions.canRead && !allowedActions.canEdit && !allowedActions.canModify) return <Page.NoPermissions />
+
   return (
     <Main>
-      <DesignSystemProvider>
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor:"#f5f5f5" }}>
-          <Flex direction="row" alignItems="center" justifyContent="space-between" paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={3}>
-            <Flex direction="row" alignItems="center" gap={0}>
-              <IconButton label={t("editor.header.toggle_components")} onClick={requestToggleLeftSidebar} variant="ghost"><LeftSidebar style={{ fill: "#ffffff" }} /></IconButton>
-              <IconButton label={t("editor.header.toggle_settings")} onClick={requestToggleRightSidebar} variant="ghost"><RightSidebar style={{ fill: "#ffffff" }} /></IconButton>
-            </Flex>
-            <Flex direction="row" alignItems="center" justifyContent="center" gap={4}>
-              <Field.Root name="contentType">
-                <Field.Label>
-                  <Flex direction="row" alignItems="center" justifyContent="space-between" gap={2} style={{ width: "100%" }}>
-                    {t("editor.header.content_type")}
-                    <IconButton onClick={() => openDialog("contentTypes")} label={<span>{t("editor.header.content_type_info")} <span onClick={() => setDialogOpen("contentTypes")} style={{ textDecoration: "underline", cursor: "pointer" }}>{t("editor.header.learn_more")}.</span></span>} variant="ghost" size={6}><Question height={12} style={{ fill: "##202020" }} /></IconButton>
-                  </Flex>
-                </Field.Label>
-                <SingleSelect size="S" placeholder={t("editor.header.select_content_type")} value={contentType || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentType", value }))}>
-                  {(contentTypes || []).map((contentType) => (<SingleSelectOption key={contentType.uid} value={contentType.uid}>{contentType.globalId}</SingleSelectOption>))}
-                </SingleSelect>
-              </Field.Root>
-              <Field.Root name="contentType">
-                <Field.Label>
-                  {t("editor.header.template")}
-                </Field.Label>
-                <SingleSelect size="S" placeholder={t("editor.header.select_template")} value={!templateId ? "___default" : templateId} onChange={(value: string) => {
-                  if (value === "___new") confirmChange(() => openDialog("createNewTemplate"))
-                  else confirmChange(() => handleChange({ target: "templateId", value }))
-                }}>
-                  {availableTemplates.length === 0 ? <SingleSelectOption value="___default">{t("editor.header.default")}</SingleSelectOption> : null}
-                  {(availableTemplates || []).map((template) => (<SingleSelectOption key={template.documentId} value={template.documentId}>{template.shortName}</SingleSelectOption>))}
-                  <hr />
-                  <SingleSelectOption value="___new">{t("editor.header.create_new")}</SingleSelectOption>
-                </SingleSelect>
-              </Field.Root>
-              <Field.Root name="contentType">
-                <Field.Label>
-                  <Flex direction="row" alignItems="center" justifyContent="space-between" gap={2} style={{ width: "100%" }}>
-                    {t("editor.header.preview_content")}
-                    <IconButton onClick={() => openModal("contentJson", JSON.stringify(contentData || {}, null, 2))} label={t("editor.header.show_content_data")} variant="ghost" size={6}><Code height={12}/></IconButton>
-                  </Flex>
-                </Field.Label>
-                <SingleSelect size="S" placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>
-                  {(availableContent || []).map((content) => (<SingleSelectOption key={content.documentId} value={content.documentId}>{content.title}</SingleSelectOption>))}
-                </SingleSelect>
-              </Field.Root>
-              <Field.Root name="contentType">
-                <Field.Label>
-                  {t("editor.header.locale")}
-                </Field.Label>
-                <SingleSelect size="S" placeholder={t("editor.header.select_locale")} value={locale || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "locale", value }))}>
-                  {(availableLocales || []).map((locale) => (<SingleSelectOption key={locale.code} value={locale.code}>{locale.name}</SingleSelectOption>))}
-                </SingleSelect>
-              </Field.Root>
-
-            </Flex>
-            <Flex direction="row" alignItems="end" gap={4}>
-              <Flex direction="row" alignItems="end" gap={0}>
-                <IconButton label={t("editor.header.undo")} onClick={requestUndo} variant="ghost"><Undo enabled={hasUndo} /></IconButton>
-                <IconButton label={t("editor.header.redo")} onClick={requestRedo} variant="ghost"><Redo enabled={hasRedo} /></IconButton>
-              </Flex>
-              <Button
-                variant={'default'}
-                loading={loading}
-                endIcon={<Save size={16}/>}
-                onClick={requestSave}
-                disabled={isDemo || loading || saving || !isDirty || (!editorPermissions.edit && !editorPermissions.modify)}
-              >
-                {t("editor.header.save")}
-              </Button>
-            </Flex>
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", backgroundColor: "#f5f5f5" }}>
+        <Flex direction="row" alignItems="center" justifyContent="space-between" paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={3}>
+          <Flex direction="row" alignItems="center" gap={0}>
+            <IconButton label={t("editor.header.toggle_components")} onClick={requestToggleLeftSidebar} variant="ghost"><LeftSidebar style={{ fill: "#ffffff" }} /></IconButton>
+            <IconButton label={t("editor.header.toggle_settings")} onClick={requestToggleRightSidebar} variant="ghost"><RightSidebar style={{ fill: "#ffffff" }} /></IconButton>
           </Flex>
-          <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "relative", display: "flex" }}>
-            <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "absolute", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#32324d33", transition: "opacity", opacity: (childReady ? 0 : 1), pointerEvents: (childReady ? "none" : "all"), cursor: (childReady ? "default" : "wait") }}>
-              {error ? <div>{error}</div> : <Loader />}
-            </div>
-            {tokenUrl ? <iframe ref={iframeRef} src={tokenUrl} style={{ width: "100%", height: "100%", borderWidth: 0, flexGrow: 1 }} /> : null}
-          </div>
-        </div>
+          <Flex direction="row" alignItems="center" justifyContent="center" gap={4}>
+            <Field.Root name="contentType">
+              <Field.Label>
+                <Flex direction="row" alignItems="center" justifyContent="space-between" gap={2} style={{ width: "100%" }}>
+                  {t("editor.header.content_type")}
+                  <IconButton onClick={() => openDialog("contentTypes")} label={<span>{t("editor.header.content_type_info")} <span onClick={() => setDialogOpen("contentTypes")} style={{ textDecoration: "underline", cursor: "pointer" }}>{t("editor.header.learn_more")}.</span></span>} variant="ghost" size={6}><Question height={12} style={{ fill: "##202020" }} /></IconButton>
+                </Flex>
+              </Field.Label>
+              <SingleSelect size="S" placeholder={t("editor.header.select_content_type")} value={contentType || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentType", value }))}>
+                {(contentTypes || []).map((contentType) => (<SingleSelectOption key={contentType.uid} value={contentType.uid}>{contentType.globalId}</SingleSelectOption>))}
+              </SingleSelect>
+            </Field.Root>
+            <Field.Root name="contentType">
+              <Field.Label>
+                {t("editor.header.template")}
+              </Field.Label>
+              <SingleSelect size="S" placeholder={t("editor.header.select_template")} value={!templateId ? "___default" : templateId} onChange={(value: string) => {
+                if (value === "___new") confirmChange(() => openDialog("createNewTemplate"))
+                else confirmChange(() => handleChange({ target: "templateId", value }))
+              }}>
+                {availableTemplates.length === 0 ? <SingleSelectOption value="___default">{t("editor.header.default")}</SingleSelectOption> : null}
+                {(availableTemplates || []).map((template) => (<SingleSelectOption key={template.documentId} value={template.documentId}>{template.shortName}</SingleSelectOption>))}
+                <hr />
+                <SingleSelectOption value="___new">{t("editor.header.create_new")}</SingleSelectOption>
+              </SingleSelect>
+            </Field.Root>
+            <Field.Root name="contentType">
+              <Field.Label>
+                <Flex direction="row" alignItems="center" justifyContent="space-between" gap={2} style={{ width: "100%" }}>
+                  {t("editor.header.preview_content")}
+                  <IconButton onClick={() => openModal("contentJson", JSON.stringify(contentData || {}, null, 2))} label={t("editor.header.show_content_data")} variant="ghost" size={6}><Code height={12} /></IconButton>
+                </Flex>
+              </Field.Label>
+              <SingleSelect size="S" placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>
+                {(availableContent || []).map((content) => (<SingleSelectOption key={content.documentId} value={content.documentId}>{content.title}</SingleSelectOption>))}
+              </SingleSelect>
+            </Field.Root>
+            <Field.Root name="contentType">
+              <Field.Label>
+                {t("editor.header.locale")}
+              </Field.Label>
+              <SingleSelect size="S" placeholder={t("editor.header.select_locale")} value={locale || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "locale", value }))}>
+                {(availableLocales || []).map((locale) => (<SingleSelectOption key={locale.code} value={locale.code}>{locale.name}</SingleSelectOption>))}
+              </SingleSelect>
+            </Field.Root>
 
-        <Modal.Root open={!!modalOpen} onOpenChange={closeModal}>
-          <ModalContent content={modalOpen} message={modalMessage} />
-        </Modal.Root>
-        <MediaSelectModal
-          open={!!mediaModalOpen}
-          onClose={closeModalMedia}
-          target={mediaModalOpen?.target || ""}
-          src={mediaModalOpen?.value}
-          type={mediaModalOpen?.type || MediaType.ALL}
-          onAccept={(target, src) => {
-            iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.RETURN_MEDIA, data: { target, src } });
-            closeModalMedia();
-          }} />
-        <SimpleDialog
-          open={dialogOpen === "unsavedChanges"}
-          onClose={closeDialog}
-          header={t("editor.modals.unsaved_changes.header")}
-          icon={<WarningCircle fill="danger600" />}
-          body={<Typography variant="omega">{t("editor.modals.unsaved_changes.body")}</Typography>}
-          hasCancel
-          cancelMessage={t("editor.modals.unsaved_changes.cancel")}
-          hasAccept
-          acceptMessage={t("editor.modals.unsaved_changes.accept")}
-          acceptVariant='danger-light'
-          onAccept={dialogAcceptAction.current}
-        />
-        <SimpleDialog
-          open={dialogOpen === "contentTypes"}
-          onClose={closeDialog}
-          header={t("editor.modals.content_types.header")}
-          icon={<Question fill="primary600" />}
-          body={<><Typography variant="omega">
-            <p>{t("editor.modals.content_types.body")}</p>
-            <p>{t("editor.modals.content_types.learn_more")} <Link href={t("editor.modals.content_types.learn_more_link")} target="_blank" rel="noopener">{t("editor.modals.content_types.learn_more_link_label")}</Link>.</p>
-          </Typography></>}
-          hasCancel={false}
-          hasAccept
-          acceptMessage={t("editor.modals.content_types.accept")}
-          acceptVariant='default'
-          onAccept={closeDialog}
-        />
-        <Dialog.Root open={dialogOpen === "createNewTemplate"} onOpenChange={closeDialog}>
-          <Dialog.Content>
-            <>
-              <Dialog.Header>{t("editor.modals.template.header")}</Dialog.Header>
-              <Dialog.Body>
-                <div style={{ width: "100%" }}>
-                  <Flex direction="column" gap={4} style={{ width: "100%" }}>
-                    <Typography variant="omega">
-                      <p>{t("editor.modals.template.body", { content_type: contentTypes.find(ct => ct.uid === contentType)?.globalId || "" })}</p>
-                    </Typography>
-                    <Field.Root name="templateName" style={{ width: "100%" }} error={(availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase()) ? "Template name already exists" : undefined}>
-                      <Field.Label>
-                        {t("editor.modals.template.template_name")}
-                      </Field.Label>
-                      <TextInput
-                        type="text"
-                        value={templateName === "___default" ? "" : templateName}
-                        placeholder={t("editor.modals.template.template_name_placeholder")}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => setTemplateName(e.target.value.trim())}
-                        error={(availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}
-                      />
-                      <Field.Error message={t("editor.modals.template.template_name_already_exists")}>
-                        {t("editor.modals.template.template_name_already_exists")}
-                      </Field.Error>
-                      <Field.Hint>
-                        {t("editor.modals.template.template_name_already_exists")}
-                      </Field.Hint>
-                    </Field.Root>
-                    <Field.Root name="duplicateId" style={{ width: "100%" }}>
-                      <Field.Label>
-                        {t("editor.modals.template.duplicate_existing")}
-                      </Field.Label>
-                      <SingleSelect placeholder={t("editor.modals.template.available_templates")} value={duplicateId || "none"} onChange={(value: string) => setDuplicateId(value === "none" ? "" : value)}>
-                        <SingleSelectOption value="none">{t("editor.modals.template.blank")}</SingleSelectOption>
-                        {(availableTemplates || []).map((template) => (<SingleSelectOption key={template.documentId} value={template.documentId}>{template.shortName}</SingleSelectOption>))}
-                      </SingleSelect>
-                    </Field.Root>
-                  </Flex>
-                </div>
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.Cancel>
-                  <Button variant="tertiary" onClick={() => setTemplateName("___default")}>{t("editor.modals.template.cancel")}</Button>
-                </Dialog.Cancel>
-                <Dialog.Action>
-                  <Button variant="default" onClick={() => handleCreateTemplate()} disabled={!templateName || (availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}>{t("editor.modals.template.accept")}</Button>
-                </Dialog.Action>
-              </Dialog.Footer>
-            </>
-          </Dialog.Content>
-        </Dialog.Root>
-      </DesignSystemProvider>
+          </Flex>
+          <Flex direction="row" alignItems="end" gap={4}>
+            <Flex direction="row" alignItems="end" gap={0}>
+              <IconButton label={t("editor.header.undo")} onClick={requestUndo} variant="ghost"><Undo enabled={hasUndo} /></IconButton>
+              <IconButton label={t("editor.header.redo")} onClick={requestRedo} variant="ghost"><Redo enabled={hasRedo} /></IconButton>
+            </Flex>
+            <Button
+              variant={'default'}
+              loading={loading}
+              endIcon={<Save size={16} />}
+              onClick={requestSave}
+              disabled={loading || saving || !isDirty || (!allowedActions.canEdit && !allowedActions.canModify)}
+            >
+              {t("editor.header.save")}
+            </Button>
+          </Flex>
+        </Flex>
+        <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "relative", display: "flex" }}>
+          <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "absolute", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#32324d33", transition: "opacity", opacity: (childReady ? 0 : 1), pointerEvents: (childReady ? "none" : "all"), cursor: (childReady ? "default" : "wait") }}>
+            {error ? <div>{error}</div> : <Loader />}
+          </div>
+          {tokenUrl ? <iframe ref={iframeRef} src={tokenUrl} style={{ width: "100%", height: "100%", borderWidth: 0, flexGrow: 1 }} /> : null}
+        </div>
+      </div>
+
+      <Modal.Root open={!!modalOpen} onOpenChange={closeModal}>
+        <ModalContent content={modalOpen} message={modalMessage} />
+      </Modal.Root>
+      <MediaSelectModal
+        open={!!mediaModalOpen}
+        onClose={closeModalMedia}
+        target={mediaModalOpen?.target || ""}
+        src={mediaModalOpen?.value}
+        type={mediaModalOpen?.type || MediaType.ALL}
+        onAccept={(target, src) => {
+          iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.RETURN_MEDIA, data: { target, src } });
+          closeModalMedia();
+        }} />
+      <SimpleDialog
+        open={dialogOpen === "unsavedChanges"}
+        onClose={closeDialog}
+        header={t("editor.modals.unsaved_changes.header")}
+        icon={<WarningCircle fill="danger600" />}
+        body={<Typography variant="omega">{t("editor.modals.unsaved_changes.body")}</Typography>}
+        hasCancel
+        cancelMessage={t("editor.modals.unsaved_changes.cancel")}
+        hasAccept
+        acceptMessage={t("editor.modals.unsaved_changes.accept")}
+        acceptVariant='danger-light'
+        onAccept={dialogAcceptAction.current}
+      />
+      <SimpleDialog
+        open={dialogOpen === "contentTypes"}
+        onClose={closeDialog}
+        header={t("editor.modals.content_types.header")}
+        icon={<Question fill="primary600" />}
+        body={<><Typography variant="omega">
+          <p>{t("editor.modals.content_types.body")}</p>
+          <p>{t("editor.modals.content_types.learn_more")} <Link href={t("editor.modals.content_types.learn_more_link")} target="_blank" rel="noopener">{t("editor.modals.content_types.learn_more_link_label")}</Link>.</p>
+        </Typography></>}
+        hasCancel={false}
+        hasAccept
+        acceptMessage={t("editor.modals.content_types.accept")}
+        acceptVariant='default'
+        onAccept={closeDialog}
+      />
+      <Dialog.Root open={dialogOpen === "createNewTemplate"} onOpenChange={closeDialog}>
+        <Dialog.Content>
+          <>
+            <Dialog.Header>{t("editor.modals.template.header")}</Dialog.Header>
+            <Dialog.Body>
+              <div style={{ width: "100%" }}>
+                <Flex direction="column" gap={4} style={{ width: "100%" }}>
+                  <Typography variant="omega">
+                    <p>{t("editor.modals.template.body", { content_type: contentTypes.find(ct => ct.uid === contentType)?.globalId || "" })}</p>
+                  </Typography>
+                  <Field.Root name="templateName" style={{ width: "100%" }} error={(availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase()) ? "Template name already exists" : undefined}>
+                    <Field.Label>
+                      {t("editor.modals.template.template_name")}
+                    </Field.Label>
+                    <TextInput
+                      type="text"
+                      value={templateName === "___default" ? "" : templateName}
+                      placeholder={t("editor.modals.template.template_name_placeholder")}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setTemplateName(e.target.value.trim())}
+                      error={(availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}
+                    />
+                    <Field.Error message={t("editor.modals.template.template_name_already_exists")}>
+                      {t("editor.modals.template.template_name_already_exists")}
+                    </Field.Error>
+                    <Field.Hint>
+                      {t("editor.modals.template.template_name_already_exists")}
+                    </Field.Hint>
+                  </Field.Root>
+                  <Field.Root name="duplicateId" style={{ width: "100%" }}>
+                    <Field.Label>
+                      {t("editor.modals.template.duplicate_existing")}
+                    </Field.Label>
+                    <SingleSelect placeholder={t("editor.modals.template.available_templates")} value={duplicateId || "none"} onChange={(value: string) => setDuplicateId(value === "none" ? "" : value)}>
+                      <SingleSelectOption value="none">{t("editor.modals.template.blank")}</SingleSelectOption>
+                      {(availableTemplates || []).map((template) => (<SingleSelectOption key={template.documentId} value={template.documentId}>{template.shortName}</SingleSelectOption>))}
+                    </SingleSelect>
+                  </Field.Root>
+                </Flex>
+              </div>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <Dialog.Cancel>
+                <Button variant="tertiary" onClick={() => setTemplateName("___default")}>{t("editor.modals.template.cancel")}</Button>
+              </Dialog.Cancel>
+              <Dialog.Action>
+                <Button variant="default" onClick={() => handleCreateTemplate()} disabled={!templateName || (availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}>{t("editor.modals.template.accept")}</Button>
+              </Dialog.Action>
+            </Dialog.Footer>
+          </>
+        </Dialog.Content>
+      </Dialog.Root>
     </Main >
   );
 };
@@ -680,7 +686,12 @@ const ModalContent: FC<{ content: string | null, message?: string }> = ({ conten
     </Modal.Content>
     default: return <div>{message}</div>
   }
+}
 
+function HomePage() {
+  return <DesignSystemProvider>
+    <HomePageInner />
+  </DesignSystemProvider>
 }
 
 export { HomePage };
