@@ -1,7 +1,7 @@
-import { Box, Button, DesignSystemProvider, Field, Flex, Grid, LinkButton, SingleSelect, SingleSelectOption, Typography } from '@strapi/design-system';
+import { Box, Button, DesignSystemProvider, Field, Flex, Grid, LinkButton, SingleSelect, SingleSelectOption, Typography, lightTheme, darkTheme } from '@strapi/design-system';
 import { Check, Cross, ExternalLink } from '@strapi/icons';
 import { Layouts, Page, useFetchClient, useRBAC } from '@strapi/strapi/admin';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import SimplifiedContentType from '../../../shared/types/SimplifiedContentType';
 import useTranslation from '../hooks/useTranslation';
 import Logo from '../icons/Logo';
@@ -9,29 +9,8 @@ import { PLUGIN_ID } from '../pluginId';
 
 const SIGN_UP_URL = "https://pagebuilder.wc8.io?utm_source=strapi_plugin"
 
-
-const styles = {
-  terminal: {
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: "10px",
-    paddingLeft: "20px",
-    width: "100%",
-    borderRadius: "5px",
-    fontFamily: '"Lucida Console", "Courier New", monospace',
-    fontSize: "1.6rem",
-    lineHeight: "1.5",
-    display: "flex",
-    alignItems: "center",
-    gap: 5
-  },
-  darkmode: {
-    backgroundColor: "#000",
-    color: "#fff"
-  }
-}
-
 const SettingsPageInner = () => {
+  const isDarkMode = useMemo(() => window?.localStorage?.STRAPI_THEME === "dark", [window?.localStorage?.STRAPI_THEME]);
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState("");
   const [previewUrl, setPreviewUrl] = useState("http://localhost:3000/editor");
@@ -143,6 +122,7 @@ const SettingsPageInner = () => {
   return (
     <Layouts.Root>
       <Layouts.Header
+        style={isDarkMode ? { backgroundColor: "#181826", color: "#fff" } : undefined}
         title={t("settings.header.title")}
         subtitle={t("settings.header.subtitle")}
         primaryAction={(
@@ -161,7 +141,7 @@ const SettingsPageInner = () => {
 
       <Layouts.Content>
         {/* <pre>{JSON.stringify(allowedActions || "{}", null, 2)}</pre> */}
-        <Box padding={6} paddingLeft={8} paddingRight={8} shadow="filterShadow" background="neutral0" marginBottom={6}>
+        <Box padding={6} paddingLeft={8} paddingRight={8} shadow="filterShadow" background="neutral0" marginBottom={6} style={isDarkMode ? { backgroundColor: "#212134", color: "#fff" } : undefined}>
           <Flex gap={2} direction="row" style={{ alignItems: "center" }}>
             <Logo width={75} height={75} />
             <Flex gap={2} direction="column" style={{ alignItems: "start" }}>
@@ -211,7 +191,7 @@ const SettingsPageInner = () => {
                         {t("settings.card.default_content_type")}
                       </Field.Label>
                       <SingleSelect style={{ flexGrow: 1 }} value={defaultContentType} onChange={(e: string) => setDefaultContentType(e)}>
-                        {contentTypes.map((contentType) => (<SingleSelectOption key={contentType.uid} value={contentType.uid}>{contentType.globalId}</SingleSelectOption>))}
+                        {contentTypes.map((contentType) => (<SingleSelectOption key={contentType.uid} value={contentType.uid}>{contentType.displayName}</SingleSelectOption>))}
                       </SingleSelect>
                     </Field.Root>
                   </Box>
@@ -255,11 +235,14 @@ const SettingsPageInner = () => {
         </Box>
       </Layouts.Content>
     </Layouts.Root>
+
   );
 };
 
 export default function SettingsPage() {
-  return <DesignSystemProvider>
+  const isDarkMode = useMemo(() => window?.localStorage?.STRAPI_THEME === "dark", [window?.localStorage?.STRAPI_THEME]);
+
+  return <DesignSystemProvider theme={isDarkMode ? darkTheme : lightTheme}>
     <SettingsPageInner />
   </DesignSystemProvider>
 }

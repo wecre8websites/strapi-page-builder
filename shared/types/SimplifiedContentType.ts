@@ -1,5 +1,6 @@
 type SimplifiedContentType = {
   uid: string;
+  displayName: string;
   globalId: string;
   source: string;
   kind: string;

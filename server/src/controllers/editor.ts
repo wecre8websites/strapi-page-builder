@@ -17,7 +17,7 @@ const editor = factories.createCoreController(`plugin::${PLUGIN_ID}.editor`, ({ 
   //Editor
   async getEditorData(ctx) {
     const { contentType, contentId, templateId, locale } = ctx.request.body;
-    ctx.body = await strapi.plugin(PLUGIN_ID).service('editor').getEditorData(contentType, contentId, templateId, locale) as GetEditorDataResponse;
+    ctx.body = await strapi.plugin(PLUGIN_ID).service('editor').getEditorData(contentType, templateId, contentId, locale) as GetEditorDataResponse;
   },
   async getStrapiContent(ctx) {
     const { contentType } = ctx.params

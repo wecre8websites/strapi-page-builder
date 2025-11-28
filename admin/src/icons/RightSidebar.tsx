@@ -14,7 +14,7 @@ const RightSidebar: FC<SVGProps<SVGElement>> = (props) => (
     viewBox="0 0 24 24"
     style={{ ...props.style }}
   >
-    <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+    <rect width="18" height="18" x="3" y="3" rx="2" style={window?.localStorage?.STRAPI_THEME === "dark" ? { fill: "#212134" } : undefined}></rect>
     <path d="M15 3v18"></path>
   </svg>
 );

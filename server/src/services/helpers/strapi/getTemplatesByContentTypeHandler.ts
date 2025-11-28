@@ -6,6 +6,7 @@ const getTemplatesByContentTypeHandler = async (strapi: Core.Strapi, contentType
     filters: {
       contentType,
     },
+    pageSize: 100,
     locale,
     fields: ["documentId", "shortName"]
   });

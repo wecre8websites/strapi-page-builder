@@ -28,9 +28,11 @@ const getContentTypesHandler = async (strapi: Core.Strapi, isSettings: boolean):
           },
           fields: ["documentId", "shortName"]
         })
+        const model = strapi.getModel(contentType.uid);
         const object = {
           // templateKey: templateKey || null,
           uid: contentType?.uid,
+          displayName: model?.info?.displayName ?? contentType?.globalId,
           kind: contentType?.kind,
           source: name.split('::')[0],
           globalId: contentType?.globalId,
@@ -45,6 +47,7 @@ const getContentTypesHandler = async (strapi: Core.Strapi, isSettings: boolean):
     const simplifiedTypes: SettingsContentType[] = types.map((contentType) => ({
       // templateKey: contentType?.templateKey || null,
       uid: contentType?.uid as string,
+      displayName: contentType?.displayName as string,
       globalId: contentType?.globalId as string,
       source: contentType?.source as string,
       kind: contentType?.kind as string,
@@ -53,6 +56,7 @@ const getContentTypesHandler = async (strapi: Core.Strapi, isSettings: boolean):
   }
   const simplifiedTypes: SimplifiedContentType[] = types.map((contentType) => ({
     uid: contentType?.uid as string,
+    displayName: contentType?.displayName as string,
     globalId: contentType?.globalId as string,
     source: contentType?.source as string,
     kind: contentType?.kind as string,

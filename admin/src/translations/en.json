@@ -39,7 +39,14 @@
       "select_locale": "Select locale",
       "undo": "Undo",
       "redo": "Redo",
-      "save": "Save"
+      "save": "Save",
+      "protocol": "Protocol",
+      "host": "Host",
+      "port": "Port",
+      "path": "Path",
+      "dev": "DEV",
+      "prod": "LIVE",
+      "search_content": "Search content"
     },
     "modals": {
       "unsaved_changes": {
@@ -71,7 +78,8 @@
       "media": {
         "header": "Select media",
         "cancel": "Cancel",
-        "accept": "Select"
+        "accept": "Select",
+        "no_results": "No results found"
       },
       "content": {
         "header": "Preview content data",

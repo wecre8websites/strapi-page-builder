@@ -1,5 +1,5 @@
 {
-  "version": "1.0.11",
+  "version": "1.1.0",
   "keywords": [],
   "type": "commonjs",
   "exports": {
@@ -32,19 +32,21 @@
   },
   "dependencies": {
     "dot-object": "^2.1.5",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.475.0",
     "react-intl": "^7.1.5",
     "traverse": "^0.6.11",
     "yup": "^1.6.1"
   },
   "devDependencies": {
-    "@strapi/design-system": "^2.0.0-rc.18",
-    "@strapi/icons": "^2.0.0-rc.18",
+    "@strapi/design-system": "^2.0.1",
+    "@strapi/icons": "^2.0.1",
     "@strapi/sdk-plugin": "^5.3.2",
-    "@strapi/strapi": "5.8.1",
-    "@strapi/types": "5.8.1",
-    "@strapi/typescript-utils": "^5.12.0",
+    "@strapi/strapi": "5.31.2",
+    "@strapi/types": "5.31.2",
+    "@strapi/typescript-utils": "^5.31.2",
     "@types/dot-object": "^2.1.6",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "prettier": "^3.4.2",
@@ -55,11 +57,11 @@
     "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "@strapi/design-system": "^2.0.0-rc.18",
-    "@strapi/icons": "^2.0.0-rc.18",
+    "@strapi/design-system": "^2.0.1",
+    "@strapi/icons": "^2.0.1",
     "@strapi/sdk-plugin": "^5.3.2",
-    "@strapi/strapi": "^5.8.1",
-    "@strapi/types": "^5.8.1",
+    "@strapi/strapi": "5.31.2",
+    "@strapi/types": "5.31.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.2",

@@ -1,6 +1,7 @@
 const deepReplace = (parent: { [key: string]: any } | { [key: string]: any }[], child: { [key: string]: any } | { [key: string]: any }[]) => {
   let newChild = { ...parent };
   for (const key in newChild) {
+    if(typeof key === 'string' && key.endsWith("_sync")) continue; // Skip keys that end with _sync
     if (newChild?.[key] && child?.[key]) {
       if (typeof newChild?.[key] === 'object' && !Array.isArray(newChild?.[key])) {
         newChild[key] = deepReplace(newChild[key], child[key]);

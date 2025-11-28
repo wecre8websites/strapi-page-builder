@@ -15,6 +15,7 @@ import getTemplatesByContentTypeHandler from "./helpers/strapi/getTemplatesByCon
 import getContentByTypeHandler from "./helpers/strapi/getContentByTypeHandler";
 import getAvailableLocalesHandler from "./helpers/strapi/getAvailableLocalesHandler";
 import saveLicenceSettings from "./helpers/license/saveLicenceSettings";
+import getContentByTemplateId from "./helpers/strapi/getContentByTemplateId";
 
 const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ strapi }: { strapi: Core.Strapi }) => ({
   //Settings
@@ -135,6 +136,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     const settingsContentTypes: SettingsContentType[] = types.map((contentType) => ({
       // templateKey: contentType?.templateKey || null,
       uid: contentType?.uid as string,
+      displayName: contentType?.displayName as string,
       globalId: contentType?.globalId as string,
       source: contentType?.source as string,
       kind: contentType?.kind as string,
@@ -143,10 +145,14 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
   },
 
   //Editor
-  async getEditorData(contentType?: string, contentId?: string, templateId?: string, locale?: string): Promise<GetEditorDataResponse> {
+  async getEditorData(contentType?: string, templateId?: string, contentId?: string, locale?: string, searchQuery?: string): Promise<GetEditorDataResponse> {
     let selectedContentType = contentType || "";
-    let selectedContentId = contentId || "";
     let selectedTemplateId = templateId || "";
+    let selectedContentId = contentId || "";
+
+    // if(selectedTemplateId !== "" && selectedTemplateId !== "i4504elrenii3m63c08eb8zp") {
+    //   throw new Error("Invalid template ID - backend");
+    // }
 
     const locales = await getAvailableLocalesHandler(strapi);
 
@@ -159,18 +165,26 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
 
     const contentTypes = await getContentTypesHandler(strapi, false) as SimplifiedContentType[];
 
-    const contentDocuments = await getContentByTypeHandler(strapi, selectedContentType);
-    const firstContentId = contentDocuments?.[0]?.documentId;
-
-    const templateDocuments = await getTemplatesByContentTypeHandler(strapi, contentType || settingsContentType, locale);
+    const templateDocuments = (await getTemplatesByContentTypeHandler(strapi, contentType || settingsContentType, locale)).sort((a, b) => a.shortName.localeCompare(b.shortName));
     const firstTemplateId = templateDocuments?.[0]?.documentId;
 
+    let contentDocuments = selectedTemplateId ? await getContentByTemplateId(strapi, selectedContentType, selectedTemplateId, locale) : [];
+    if (contentDocuments.length === 0) contentDocuments.push(...(await getContentByTypeHandler(strapi, selectedContentType, searchQuery, locale)));
+    //filter duplicates
+    contentDocuments = contentDocuments.filter((contentDocument, index, self) =>
+      index === self.findIndex((t) => (
+        t.documentId === contentDocument.documentId
+      ))
+    );
+    const firstContentId = contentDocuments?.[0]?.documentId;
+
     let contentResult: Awaited<ReturnType<typeof getContentHandler>>
-    if (!!selectedContentType && selectedContentType !== settingsContentType && contentDocuments?.length) {
-      selectedContentId = firstContentId;
+    if ((!!selectedContentType && selectedContentType !== settingsContentType && contentDocuments?.length)) {
+      selectedContentId = selectedContentId ?? firstContentId
       contentResult = await getContentHandler(strapi, contentType, selectedContentId, locale);
+      if (!contentResult?.contentData?.documentId) contentResult = await getContentHandler(strapi, contentType, firstContentId, locale);
     } else {
-      contentResult = await getContentHandler(strapi, settingsContentType, selectedContentId, locale);
+      contentResult = await getContentHandler(strapi, settingsContentType, settingsContentId, locale);
     }
     const { contentData, templateId: contentTemplateId, error: contentError } = contentResult;
     selectedTemplateId = selectedTemplateId || contentTemplateId || firstTemplateId;
