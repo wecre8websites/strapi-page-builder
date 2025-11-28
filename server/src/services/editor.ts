@@ -121,10 +121,13 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         return hasRelation
       });
       if (hasTemplateRelation) {
+
         if ((name.includes("api::") || (contentType?.pluginOptions?.['content-manager']?.visible)) && !blackListedPlugins.includes(name.replace('plugin::', '').split('.')[0])) {
+          const model = strapi.getModel(contentType.uid);
           const object = {
             // templateKey: templateKey || null,
             uid: contentType?.uid,
+            displayName: model?.info?.displayName ?? contentType?.globalId,
             kind: contentType?.kind,
             source: name.split('::')[0],
             globalId: contentType?.globalId,
