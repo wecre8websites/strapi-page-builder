@@ -24,6 +24,11 @@ const editor = factories.createCoreController(`plugin::${PLUGIN_ID}.editor`, ({ 
     const { searchQuery, locale, titleField } = ctx.request.body
     ctx.body = await strapi.plugin(PLUGIN_ID).service('editor').getStrapiContent(contentType, searchQuery, locale, titleField);
   },
+  async getTemplates(ctx) {
+    const { contentType } = ctx.params
+    const { searchQuery, locale } = ctx.request.body
+    ctx.body = await strapi.plugin(PLUGIN_ID).service('editor').getTemplates(contentType, searchQuery, locale);
+  },
   async saveTemplate(ctx) {
     const saveTemplateRequest: SaveTemplateRequest = {
       templateId: ctx.params.templateId,
@@ -31,7 +36,8 @@ const editor = factories.createCoreController(`plugin::${PLUGIN_ID}.editor`, ({ 
       templateJson: ctx.request.body.templateJson,
       contentType: ctx.request.body.contentType,
       duplicateId: ctx.request.body.duplicateId,
-      locale: ctx.request.body.locale
+      locale: ctx.request.body.locale,
+      config: ctx.request.body.config
     }
     const result = await strapi.plugin(PLUGIN_ID).service('editor').saveTemplate(saveTemplateRequest);
     ctx.body = result;

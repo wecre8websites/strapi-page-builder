@@ -1,6 +1,7 @@
-import { Switch, Combobox, ComboboxOption, Button, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, TextInput, Typography, darkTheme, lightTheme } from '@strapi/design-system';
+import { Box, Button, Combobox, ComboboxOption, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, Switch, TextInput, Typography, darkTheme, lightTheme } from '@strapi/design-system';
 import { Code, CrossCircle, Question, Search, WarningCircle } from '@strapi/icons';
 import { Page, useFetchClient, useRBAC } from '@strapi/strapi/admin';
+import debounce from 'lodash.debounce';
 import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package, Save } from 'lucide-react';
 import { ChangeEvent, FC, JSX, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
@@ -12,9 +13,7 @@ import LeftSidebar from '../icons/LeftSidebar';
 import Redo from '../icons/Redo';
 import RightSidebar from '../icons/RightSidebar';
 import Undo from '../icons/Undo';
-import debounce from 'lodash.debounce';
 import { PLUGIN_ID } from '../pluginId';
-import { Box } from '@strapi/design-system';
 
 /**
  * 
@@ -77,19 +76,19 @@ const sendIframeMessage = (iframe: HTMLIFrameElement, message: ParentMessageEven
 
 const HomePageInner = () => {
   const isDarkMode = window.localStorage?.STRAPI_THEME === "dark";
-  const searchParams = new URLSearchParams(window.location?.search)
   const [availableLocales, setAvailableLocales] = useState<GetEditorDataResponse["locales"]>([]);
   const { contentType, templateId, contentId, locale } = useMemo(() => {
-    if (!availableLocales || availableLocales.length === 0) return { contentType: null, templateId: null, contentId: null, locale: null, availableLocales: null };
-    const contentType = searchParams.get('_contentType');
-    const templateId = searchParams.get('_templateId');
+    const searchParams = new URLSearchParams(window.location?.search)
+    // if (!availableLocales || availableLocales.length === 0) return { contentType: null, templateId: null, contentId: null, locale: null, availableLocales: null };
+    const contentType = searchParams.get('_contentType') ?? undefined;
+    const templateId = searchParams.get('_templateId') ?? undefined;
     // if (templateId !== "" && templateId !== null && templateId !== "i4504elrenii3m63c08eb8zp") {
     //   throw new Error("Invalid template ID - useMemo searchParams");
     // }
-    const contentId = searchParams.get('_contentId');
+    const contentId = searchParams.get('_contentId') ?? undefined;
     const locale = searchParams.get('_locale') || availableLocales?.find(l => l.isDefault)?.code || undefined;
     return { contentType, templateId, contentId, locale, availableLocales };
-  }, [window?.location.href])
+  }, [window?.location?.search]);
 
   const { t } = useTranslation();
   const { allowedActions, isLoading, error: rbacError } = useRBAC([
@@ -97,6 +96,7 @@ const HomePageInner = () => {
     { action: `plugin::${PLUGIN_ID}.editor.edit`, subject: null },
     { action: `plugin::${PLUGIN_ID}.editor.modify`, subject: null },
   ])
+
   const permissions = useMemo(() => ({
     read: allowedActions.canRead,
     edit: allowedActions.canEdit,
@@ -145,45 +145,57 @@ const HomePageInner = () => {
   // const [contentType, setContentType] = useState(contentType ?? "");
   const [availableTemplates, setAvailableTemplates] = useState<GetEditorDataResponse["templateDocuments"]>([]);
   const [availableContent, setAvailableContent] = useState<GetEditorDataResponse["contentDocuments"]>([]);
-  const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined);
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
-  const debouncedSearch = useCallback(debounce(query => setDebouncedSearchQuery(query), 1000), [setDebouncedSearchQuery])
-  const search = useCallback((query: string) => {
-    setSearchQuery(query);
-    debouncedSearch(query);
-  }, [debouncedSearch]);
+  const [contentSearchQuery, setContentSearchQuery] = useState<string | undefined>(undefined);
+  const [debouncedContentSearchQuery, setDebouncedContentSearchQuery] = useState<string>("");
+  const debouncedContentSearch = useCallback(debounce(query => setDebouncedContentSearchQuery(query), 1000), [setDebouncedContentSearchQuery])
+  const searchContent = useCallback((query: string) => {
+    setContentSearchQuery(query);
+    debouncedContentSearch(query);
+  }, [debouncedContentSearch]);
 
   useEffect(() => {
-    searchContentType(debouncedSearchQuery ?? undefined).then(setAvailableContent);
-  }, [debouncedSearchQuery])
+    searchContentType(debouncedContentSearchQuery ?? undefined).then(setAvailableContent);
+  }, [debouncedContentSearchQuery])
+
+  const [templateSearchQuery, setTemplateSearchQuery] = useState<string | undefined>(undefined);
+  const [debouncedTemplateSearchQuery, setDebouncedTemplateSearchQuery] = useState<string>("");
+  const debouncedTemplateSearch = useCallback(debounce(query => setDebouncedTemplateSearchQuery(query), 1000), [setDebouncedTemplateSearchQuery])
+  const searchTemplates = useCallback((query: string) => {
+    setTemplateSearchQuery(query);
+    debouncedTemplateSearch(query);
+  }, [debouncedTemplateSearch]);
+
+  useEffect(() => {
+    searchForTemplate(debouncedTemplateSearchQuery ?? undefined).then(setAvailableTemplates);
+  }, [debouncedTemplateSearchQuery])
+
 
   // const [locale, setLocale] = useState<string | undefined>(locale ?? undefined);
   const isDefaultLocale = useMemo(() => locale && (availableLocales || [])?.find(l => l.isDefault)?.code === locale, [locale, availableLocales])
   // const [templateId, setTemplateId] = useState<string>(templateId ?? "___default");
   // const [contentId, setContentId] = useState<string | undefined>(contentId ?? undefined);
   const tokenUrl = useMemo(() => {
-    if (!url || !licenceToken || !locale) return '';
-    const updatedUrl = new URL(url);
-    const queryParams = updatedUrl.searchParams;
-    queryParams.set('_pagebuilderToken', licenceToken);
-    if (contentType) queryParams.set('_contentType', contentType);
-    if (templateId) queryParams.set('_templateId', templateId);
-    if (contentId) queryParams.set('_contentId', contentId);
-    if (locale) queryParams.set('_locale', locale);
+    if (!url || !licenceToken) return '';
+    let updatedUrl = new URL(url);
+    updatedUrl.searchParams.set('_pagebuilderToken', licenceToken);
+    if (contentType) updatedUrl.searchParams.set('_contentType', contentType);
+    if (templateId) updatedUrl.searchParams.set('_templateId', templateId);
+    if (contentId) updatedUrl.searchParams.set('_contentId', contentId);
+    if (locale) updatedUrl.searchParams.set('_locale', locale);
     return updatedUrl.toString();
   }, [url, licenceToken, contentId, contentType, templateId]);
 
   const devTokenUrl = useMemo(() => {
     if (!devUrl || !licenceToken) return '';
-    const updatedUrl = new URL(devUrl);
-    const queryParams = updatedUrl.searchParams;
-    queryParams.set('_pagebuilderToken', licenceToken);
-    if (contentType) queryParams.set('_contentType', contentType);
-    if (templateId) queryParams.set('_templateId', templateId);
-    if (contentId) queryParams.set('_contentId', contentId);
-    if (locale) queryParams.set('_locale', locale);
+    let updatedUrl = new URL(devUrl);
+    updatedUrl.searchParams.set('_pagebuilderToken', licenceToken);
+    if (contentType) updatedUrl.searchParams.set('_contentType', contentType);
+    if (templateId) updatedUrl.searchParams.set('_templateId', templateId);
+    if (contentId) updatedUrl.searchParams.set('_contentId', contentId);
+    if (locale) updatedUrl.searchParams.set('_locale', locale);
     return updatedUrl.toString();
   }, [devUrl, licenceToken, contentId, contentType, templateId]);
+
 
   //Send to Iframe
   const [templateJson, setTemplateJson] = useState<{ [key: string]: any }>({});
@@ -201,7 +213,12 @@ const HomePageInner = () => {
   const { post, put, get } = useFetchClient();
 
   const searchContentType = useCallback(async (searchQuery?: string, titleField?: string) => {
-    const { data } = await post<{ documentId: string; title: any; }[]>(`/${PLUGIN_ID}/editor/content/${contentType}`, { searchQuery, titleField });
+    const { data } = await post<{ documentId: string; title: any; }[]>(`/${PLUGIN_ID}/editor/content/${contentType}`, { searchQuery, titleField, locale });
+    return data
+  }, [locale, contentType]);
+
+  const searchForTemplate = useCallback(async (searchQuery?: string) => {
+    const { data } = await post<{ documentId: string; shortName: any; }[]>(`/${PLUGIN_ID}/editor/content/${contentType}/templates`, { searchQuery, locale });
     return data
   }, [locale, contentType]);
 
@@ -233,22 +250,33 @@ const HomePageInner = () => {
     else setAvailableTemplates([]);
     if (editorData.contentDocuments) setAvailableContent(editorData.contentDocuments);
     else setAvailableContent([]);
-    const windowUrl = new URL(window.location.href);
-
-    if (editorData.contentType && editorData.contentType !== data?.contentType) windowUrl.searchParams.set('_contentType', editorData.contentType);
-    if (editorData.templateId && editorData.templateId !== data?.templateId) {
-      // if (editorData.templateId !== "" && editorData.templateId !== null && editorData.templateId !== "i4504elrenii3m63c08eb8zp") throw new Error("Invalid template ID - getEditorData function - searchParams Set");
-      windowUrl.searchParams.set('_templateId', editorData.templateId);
+    const windowUrl = new URL(window.location?.href);
+    let contentChanged = false;
+    if (!locale && editorData.locales?.length > 0) {
+      const defaultLocale = editorData.locales.find(l => l.isDefault)?.code || editorData.locales[0].code;
+      windowUrl.searchParams.set('_locale', defaultLocale);
+      contentChanged = true;
     }
-    if (editorData.contentId && editorData.contentId !== data?.contentId) windowUrl.searchParams.set('_contentId', editorData.contentId);
-    // if (editorData.locale && editorData.locale !== locale) queryParams.set('_locale', locale);
+    if (editorData.contentType && editorData.contentType !== data?.contentType) {
+      windowUrl.searchParams.set('_contentType', editorData.contentType);
+      contentChanged = true
+    }
+    if (editorData.templateId && editorData.templateId !== data?.templateId) {
+      windowUrl.searchParams.set('_templateId', editorData.templateId);
+      contentChanged = true
+    }
+    if (editorData.contentId && editorData.contentId !== data?.contentId) {
+      windowUrl.searchParams.set('_contentId', editorData.contentId);
+      contentChanged = true
+    }
 
-    if (window.location.href !== windowUrl.toString()) {
-      console.log('getEditorData: Redirecting to new URL', windowUrl.toString());
+    if (contentChanged) {
       // window.location.href = windowUrl.toString();
       window.history.replaceState({}, 'Page Builder', windowUrl.toString());
-    } else setLoading(false);
-  }, []);
+    } else {
+      setLoading(false);
+    }
+  }, [window.location?.href]);
 
   const requestUndo = useCallback(() => {
     iframeRef.current && sendIframeMessage(iframeRef.current, { type: ParentMessageType.UNDO_REQUESTED, data: {} });
@@ -311,12 +339,11 @@ const HomePageInner = () => {
     }
     if (searchParams.toString() !== windowUrl.searchParams.toString()) {
 
-      console.log('handleChange: Redirecting to new URL', windowUrl);
       // window.location.href = newUrl.toString();
       window.history.replaceState({}, 'Page Builder', windowUrl.toString());
 
     }
-  }, [contentType, templateId, contentId, locale, debouncedSearchQuery, availableContent])
+  }, [contentType, templateId, contentId, locale, debouncedContentSearchQuery, availableContent])
 
   const confirmChange = useCallback(async (callback: () => any) => {
     if (isDirty) {
@@ -329,7 +356,7 @@ const HomePageInner = () => {
 
   const handleCreateTemplate = useCallback(async (isDefault: boolean = false) => {
     try {
-      const { data: result } = await post(`/${PLUGIN_ID}/editor/templates`, { contentType, templateName: isDefault ? "Default" : templateName, duplicateId, locale } as SaveTemplateRequest);
+      const { data: result } = await post(`/${PLUGIN_ID}/editor/templates`, { contentType, templateName: isDefault ? "Default" : templateName?.trim(), duplicateId, locale } as SaveTemplateRequest);
       const { templateId, templateJson, templateDocuments } = result;
       const windowUrl = new URL(window.location.href);
 
@@ -346,7 +373,7 @@ const HomePageInner = () => {
 
   const handleSave = useCallback(async (data: any) => {
     // if (isDemo) return;
-    const { templateJson } = data;
+    const { templateJson, config } = data;
     if (!allowedActions.canEdit && !allowedActions.canModify) {
       console.error(`[Page Builder] Error saving page: insufficient permissions`);
       return
@@ -359,13 +386,12 @@ const HomePageInner = () => {
       if (templateId === "___default") {
         return await handleCreateTemplate(true);
       }
-      const { data: result } = await put(`/${PLUGIN_ID}/editor/templates/${templateId}`, { templateJson, locale } as SaveTemplateRequest);
+      const { data: result } = await put(`/${PLUGIN_ID}/editor/templates/${templateId}`, { templateJson, config, locale } as SaveTemplateRequest);
       const { templateId: savedTemplateId, templateJson: savedTemplateJson, templateDocuments } = result;
       const windowUrl = new URL(window.location.href);
 
       if (savedTemplateId !== templateId) {
         windowUrl.searchParams.set('_templateId', savedTemplateId);
-        console.log('handleSave: Redirecting to new templateId', savedTemplateId);
         // window.location.href = windowUrl.toString();
         window.history.replaceState({}, 'Page Builder', windowUrl.toString());
       } else {
@@ -457,8 +483,9 @@ const HomePageInner = () => {
   }, [handleSave, handlePopulate]);
 
   useEffect(() => {
-    getEditorData({ contentType: contentType ?? undefined, templateId: templateId ?? undefined, contentId: contentId ?? undefined, locale: locale ?? undefined });
-  }, [contentType, templateId, contentId, locale]);
+    if (isLoading) return;
+    getEditorData({ contentType, templateId, contentId, locale });
+  }, [contentType, templateId, contentId, locale, isLoading]);
 
   if (isLoading) return <Page.Loading />
   if (rbacError) return <Page.Error />;
@@ -488,7 +515,7 @@ const HomePageInner = () => {
               <Field.Label style={isDarkMode ? { color: "#c0c0cf" } : {}}>
                 {t("editor.header.template")}
               </Field.Label>
-              <SingleSelect size="S" placeholder={t("editor.header.select_template")} value={!templateId ? "___default" : templateId} onChange={(value: string) => {
+              {/*<SingleSelect size="S" placeholder={t("editor.header.select_template")} value={!templateId ? "___default" : templateId} onChange={(value: string) => {
                 if (value === "___new") confirmChange(() => openDialog("createNewTemplate"))
                 else confirmChange(() => handleChange({ target: "templateId", value }))
               }}>
@@ -496,7 +523,35 @@ const HomePageInner = () => {
                 {(availableTemplates || []).map((template) => (<SingleSelectOption key={template.documentId} value={template.documentId}>{template.shortName}</SingleSelectOption>))}
                 <hr />
                 <SingleSelectOption value="___new">{t("editor.header.create_new")}</SingleSelectOption>
-              </SingleSelect>
+              </SingleSelect>*/}
+              <Combobox
+                autocomplete="none"
+                onTextValueChange={(value: string) => searchTemplates(value)}
+                textValue={templateSearchQuery || availableTemplates?.find(t => t.documentId === templateId)?.shortName || ""}
+                defaultTextValue={availableTemplates?.find(t => t.documentId === templateId)?.shortName || ""}
+                onChange={(value: string) => {
+                  if (value === "___new") confirmChange(() => openDialog("createNewTemplate"))
+                  else confirmChange(() => {
+                    setTemplateSearchQuery("")
+                    setDebouncedTemplateSearchQuery("")
+                    handleChange({ target: "templateId", value })
+                  })
+                }}
+                value={templateId || ""}
+                placeholder={t("editor.header.search_template")}
+                // createDisabled={true}
+                size="S"
+                onClear={() => {
+                  setTemplateSearchQuery("");
+                  setDebouncedTemplateSearchQuery("")
+                }}>
+                {availableTemplates?.map(template => (<ComboboxOption key={template.documentId} value={template.documentId} textValue={template.shortName} selected={template.documentId === templateId}
+                  style={isDarkMode ? { color: "#fff" } : undefined}
+                >{template.shortName}</ComboboxOption>))}
+                <ComboboxOption key="___new" value="___new" textValue={t("editor.header.create_new")}
+                  style={isDarkMode ? { color: "#fff" } : undefined}
+                >{t("editor.header.create_new")}</ComboboxOption>
+              </Combobox>
             </Field.Root>
             <Field.Root name="contentType">
               <Field.Label style={isDarkMode ? { color: "#c0c0cf" } : {}}>
@@ -506,13 +561,13 @@ const HomePageInner = () => {
                 </Flex>
               </Field.Label>
               <Combobox
-
                 autocomplete="none"
-                onTextValueChange={(value: string) => search(value)}
-                textValue={searchQuery ?? availableContent?.find(c => c.documentId === contentId)?.title ?? ""}
+                onTextValueChange={(value: string) => searchContent(value)}
+                textValue={contentSearchQuery || availableContent?.find(c => c.documentId === contentId)?.title || ""}
                 defaultTextValue={availableContent?.find(c => c.documentId === contentId)?.title || ""}
                 onChange={(value: string) => confirmChange(() => {
-                  setSearchQuery(availableContent?.find(c => c.documentId === value)?.title || "")
+                  setContentSearchQuery("")
+                  setDebouncedContentSearchQuery("")
                   handleChange({ target: "contentId", value })
                 })}
                 value={contentId || ""}
@@ -520,11 +575,11 @@ const HomePageInner = () => {
                 // createDisabled={true}
                 size="S"
                 onClear={() => {
-                  setSearchQuery("");
-                  setDebouncedSearchQuery("")
+                  setContentSearchQuery("");
+                  setDebouncedContentSearchQuery("")
                 }}>
                 {availableContent?.map(content => (<ComboboxOption key={content.documentId} value={content.documentId} textValue={content.title} selected={content.documentId === contentId}
-                  style={isDarkMode ? { color: "#000" } : undefined}
+                  style={isDarkMode ? { color: "#fff" } : undefined}
                 >{content.title}</ComboboxOption>))}
               </Combobox>
               {/* <SingleSelect size="S" placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>
@@ -612,7 +667,7 @@ const HomePageInner = () => {
           <div style={{ width: "100%", height: "100%", flexGrow: 1, position: "absolute", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#32324d33", transition: "opacity", opacity: (childReady ? 0 : 1), pointerEvents: (childReady ? "none" : "all"), cursor: (childReady ? "default" : "wait") }}>
             {error ? <div>{error}</div> : <Loader />}
           </div>
-          {tokenUrl ? <iframe ref={iframeRef} src={devMode ? devTokenUrl : tokenUrl} style={{ width: "100%", height: "100%", borderWidth: 0, flexGrow: 1 }} /> : null}
+          {!!(devMode ? devTokenUrl : tokenUrl) ? <iframe ref={iframeRef} src={devMode ? devTokenUrl : tokenUrl} style={{ width: "100%", height: "100%", borderWidth: 0, flexGrow: 1 }} /> : null}
         </div>
       </div>
 
@@ -675,7 +730,7 @@ const HomePageInner = () => {
                       type="text"
                       value={templateName === "___default" ? "" : templateName}
                       placeholder={t("editor.modals.template.template_name_placeholder")}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setTemplateName(e.target.value.trim())}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setTemplateName(e.target.value)}
                       error={(availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}
                     />
                     <Field.Error message={t("editor.modals.template.template_name_already_exists")}>
@@ -702,7 +757,7 @@ const HomePageInner = () => {
                 <Button variant="tertiary" onClick={() => setTemplateName("___default")}>{t("editor.modals.template.cancel")}</Button>
               </Dialog.Cancel>
               <Dialog.Action>
-                <Button variant="default" onClick={() => handleCreateTemplate()} disabled={!templateName || (availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}>{t("editor.modals.template.accept")}</Button>
+                <Button variant="default" onClick={() => handleCreateTemplate()} disabled={!templateName?.trim() || (availableTemplates || []).some(template => template.shortName.toLowerCase() === templateName.toLowerCase())}>{t("editor.modals.template.accept")}</Button>
               </Dialog.Action>
             </Dialog.Footer>
           </>

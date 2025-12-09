@@ -53,6 +53,21 @@ export default {
       sortable: true,
       configurable: true,
     },
+    defaultTemplateId: {
+      pluginOptions: {
+        i18n: {
+          localized: false,
+        },
+      },
+      type: 'string',
+      unique: false,
+      required: false,
+      maxLength: 100,
+      visible: true,
+      searchable: true,
+      sortable: true,
+      configurable: true,
+    },
     defaultContentId: {
       pluginOptions: {
         i18n: {

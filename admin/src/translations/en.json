@@ -15,6 +15,7 @@
       "no_api_key": "No API key? Sign up for free here",
       "editor_url": "Enter your website's Page Builder URL",
       "default_content_type": "Select default content type",
+      "default_template": "Select default template",
       "default_content": "Select default content",
       "accept": "Save and check the connection",
       "enforce_template_shape": "Enforce template shape for alternate locales"
@@ -46,7 +47,8 @@
       "path": "Path",
       "dev": "DEV",
       "prod": "LIVE",
-      "search_content": "Search content"
+      "search_content": "Search content",
+      "search_template": "Search template"
     },
     "modals": {
       "unsaved_changes": {

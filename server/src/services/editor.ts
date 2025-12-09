@@ -45,18 +45,20 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
       error: null
     };
   },
-  async saveSettings(data: { apiKey?: string, url?: string, defaultContentType?: string, defaultContentId?: string, enforceTemplateShape?: boolean }) {
+  async saveSettings(data: { apiKey?: string, url?: string, defaultContentType?: string, defaultTemplateId?: string, defaultContentId?: string, enforceTemplateShape?: boolean }) {
     let queryData = await strapi.db.query(`plugin::${PLUGIN_ID}.editor`).findMany()
     const settings = queryData?.[0];
     const apiKey = data?.apiKey || settings?.apiKey;
     const url = data?.url || undefined
     const defaultContentType = data?.defaultContentType || undefined
+    const defaultTemplateId = data?.defaultTemplateId || undefined
     const defaultContentId = data?.defaultContentId || undefined
     const enforceTemplateShape = data?.enforceTemplateShape ?? (settings.enforceTemplateShape ?? true);
     if (!apiKey) return {
       apiKey: "",
       success: false,
       defaultContentType,
+      defaultTemplateId,
       defaultContentId,
       enforceTemplateShape,
       error: 'API Key is required'
@@ -69,6 +71,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
           data: {
             apiKey,
             defaultContentType,
+            defaultTemplateId,
             defaultContentId,
             enforceTemplateShape
           }
@@ -78,6 +81,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
           data: {
             apiKey,
             defaultContentType,
+            defaultTemplateId,
             defaultContentId,
             enforceTemplateShape
           }
@@ -87,6 +91,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         apiKey,
         ...licenceData,
         defaultContentType,
+        defaultTemplateId,
         defaultContentId,
         enforceTemplateShape,
         error: licenceData?.error ? `Unable to save settings: ${licenceData.error}` : null
@@ -97,6 +102,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         apiKey,
         success: false,
         defaultContentType,
+        defaultTemplateId,
         defaultContentId,
         enforceTemplateShape,
         error: `Unable to save settings: ${(error as Error).message}`
@@ -159,8 +165,9 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
 
     const locales = await getAvailableLocalesHandler(strapi);
 
-    const { apiKey, contentType: settingsContentType, contentId: settingsContentId, enforceTemplateShape } = await getSettingsHandler(strapi);
+    const { apiKey, contentType: settingsContentType, templateId: settingsTemplateId, contentId: settingsContentId, enforceTemplateShape } = await getSettingsHandler(strapi);
     selectedContentType = selectedContentType || settingsContentType;
+    selectedTemplateId = selectedTemplateId || settingsTemplateId;
     selectedContentId = selectedContentId || settingsContentId;
 
     const licenceTokenData = await updateLicenceToken(apiKey);
@@ -182,18 +189,19 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     const firstContentId = contentDocuments?.[0]?.documentId;
 
     let contentResult: Awaited<ReturnType<typeof getContentHandler>>
-    if ((!!selectedContentType && selectedContentType !== settingsContentType && contentDocuments?.length)) {
-      selectedContentId = selectedContentId ?? firstContentId
-      contentResult = await getContentHandler(strapi, contentType, selectedContentId, locale);
-      if (!contentResult?.contentData?.documentId) contentResult = await getContentHandler(strapi, contentType, firstContentId, locale);
-    } else {
-      contentResult = await getContentHandler(strapi, settingsContentType, settingsContentId, locale);
-    }
+    // if ((!!selectedContentType && selectedContentType !== settingsContentType && contentDocuments?.length)) {
+    selectedContentId = selectedContentId ?? firstContentId ?? settingsContentId
+    contentResult = await getContentHandler(strapi, contentType, selectedContentId, locale);
+    if (!contentResult?.contentData?.documentId) contentResult = await getContentHandler(strapi, contentType, firstContentId, locale);
+    if (!contentResult?.contentData?.documentId) contentResult = await getContentHandler(strapi, contentType, settingsContentId, locale);
+    // } else {
+    // contentResult = await getContentHandler(strapi, settingsContentType, settingsContentId, locale);
+    // }
     const { contentData, templateId: contentTemplateId, error: contentError } = contentResult;
-    selectedTemplateId = selectedTemplateId || contentTemplateId || firstTemplateId;
+    selectedTemplateId = selectedTemplateId || contentTemplateId || settingsTemplateId || firstTemplateId;
     let { templateJson } = contentResult
     if (selectedTemplateId && selectedTemplateId !== contentTemplateId) {
-      const template = await getTemplateHandler(strapi, templateId, locale);
+      const template = await getTemplateHandler(strapi, selectedTemplateId, locale);
       templateJson = template?.json;
     }
     const response: GetEditorDataResponse = {
@@ -230,6 +238,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     if (saveType === "update" && !data.templateJson) return { error: "Template JSON is required for update" }
     if (saveType === "create" && !data.contentType) return { error: "Content type is required for create" }
     if (saveType === "create" && !data.templateName) return { error: "Template name is required for create" }
+
     const locales = await getAvailableLocalesHandler(strapi);
     const defaultLocale = locales.find(l => l.isDefault)?.code || data?.locale || undefined;
     try {
@@ -258,7 +267,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
           } else json = { ...json, ...(data?.templateJson || {}) }
           const isPlugin = data.contentType.includes("plugin::");
           const contentTypeName = data.contentType?.split(".").pop();
-          const name = (`${isPlugin ? "plugin." : ""}${contentTypeName.toLowerCase()}.${data.templateName.toLowerCase()}`).replace(/[^A-Za-z0-9-.]/gi, "-");
+          const name = (`${isPlugin ? "plugin." : ""}${contentTypeName.toLowerCase()}.${data.templateName.toLowerCase()}`).replace(/[^A-Za-z0-9-.]/gi, "-").replace(/--+/g, "-");
           result = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.create({
             data: {
               name,
@@ -306,6 +315,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
               data: { json: parentJson }
             });
             if (!!enforceTemplateShape) {
+              if (!data.config) return { error: "Template config is required for update with enforceTemplateShape enabled" }
               const remainingLocales = locales.filter((locale) => locale.code !== data?.locale).map((locale) => locale.code);
               //For each remaining locale, get the tramplateJson for that locale, traverse through the object and insert or remove any differences in key before saving
               for (const locale of remainingLocales) {
@@ -315,7 +325,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
                   populate: "*"
                 });
                 const childJson = localeDoc?.json;
-                const matchedJson = matchTemplateShape(parentJson, childJson);
+                const matchedJson = matchTemplateShape(parentJson, childJson, data.config);
                 let json = { ...defaultJson, ...matchedJson }
                 await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
                   documentId: data.templateId,
@@ -327,6 +337,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
             }
           } else if (data?.locale) {
             if (!!enforceTemplateShape) {
+              if (!data.config) return { error: "Template config is required for update with enforceTemplateShape enabled" }
               const childJson = { ...defaultJson, ...data.templateJson }
               const parentDoc = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.findOne({
                 documentId: data.templateId,
@@ -334,7 +345,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
                 populate: "*"
               });
               const parentJson = parentDoc?.json;
-              const matchedJson = matchTemplateShape(parentJson, childJson);
+              const matchedJson = matchTemplateShape(parentJson, childJson, data.config);
               result = await strapi.documents(`plugin::${PLUGIN_ID}.template`)?.update({
                 documentId: data.templateId,
                 locale: data.locale,
@@ -366,6 +377,10 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
       return { error: (error as Error).message }
     }
   },
+  async getTemplates(contentType, searchQuery, locale) {
+    const templateDocuments = await getTemplatesByContentTypeHandler(strapi, contentType, locale, searchQuery);
+    return templateDocuments;
+  }
 }));
 
 export default editor;

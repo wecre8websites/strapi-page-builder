@@ -6,6 +6,10 @@ import SimplifiedContentType from '../../../shared/types/SimplifiedContentType';
 import useTranslation from '../hooks/useTranslation';
 import Logo from '../icons/Logo';
 import { PLUGIN_ID } from '../pluginId';
+import { Combobox } from '@strapi/design-system';
+import { ComboboxOption } from '@strapi/design-system';
+import debounce from 'lodash.debounce';
+import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
 
 const SIGN_UP_URL = "https://pagebuilder.wc8.io?utm_source=strapi_plugin"
 
@@ -21,7 +25,7 @@ const SettingsPageInner = () => {
   const [contentTypes, setContentTypes] = useState<SimplifiedContentType[]>([]);
   const [defaultContentType, setDefaultContentType] = useState("");
   const [defaultContentId, setDefaultContentId] = useState("");
-  const [availableContent, setAvailableContent] = useState<{ documentId: string, title: string }[]>([]);
+  const [defaultTemplateId, setDefaultTemplateId] = useState("");
   const [contentLoading, setContentLoading] = useState(false);
   const [enforceTemplateShape, setEnforceTemplateShape] = useState(true);
 
@@ -34,6 +38,7 @@ const SettingsPageInner = () => {
         apiKey,
         url: previewUrl || undefined,
         defaultContentType,
+        defaultTemplateId,
         defaultContentId,
         enforceTemplateShape
       });
@@ -63,6 +68,7 @@ const SettingsPageInner = () => {
       if (apiKey) setApiKey(apiKey);
       if (web_url) setPreviewUrl(web_url);
       if (defaultContentType) setDefaultContentType(defaultContentType);
+      if (defaultTemplateId) setDefaultTemplateId(defaultTemplateId);
       if (defaultContentId) setDefaultContentId(defaultContentId);
       setEnforceTemplateShape(enforceTemplateShape ?? true);
       setErrorMessage("");
@@ -109,7 +115,46 @@ const SettingsPageInner = () => {
   useEffect(() => {
     if (!defaultContentType) return;
     getContentByType(defaultContentType);
+    searchForTemplate().then(setAvailableTemplates);
+
   }, [defaultContentType])
+
+  const searchContentType = useCallback(async (searchQuery?: string, titleField?: string) => {
+    const { data } = await post<{ documentId: string; title: any; }[]>(`/${PLUGIN_ID}/editor/content/${defaultContentType}`, { searchQuery, titleField });
+    return data
+  }, [defaultContentType]);
+
+  const searchForTemplate = useCallback(async (searchQuery?: string) => {
+    const { data } = await post<{ documentId: string; shortName: any; }[]>(`/${PLUGIN_ID}/editor/content/${defaultContentType}/templates`, { searchQuery });
+    return data
+  }, [defaultContentType]);
+
+  const [availableTemplates, setAvailableTemplates] = useState<GetEditorDataResponse["templateDocuments"]>([]);
+  const [availableContent, setAvailableContent] = useState<GetEditorDataResponse["contentDocuments"]>([]);
+  const [contentSearchQuery, setContentSearchQuery] = useState<string | undefined>(undefined);
+  const [debouncedContentSearchQuery, setDebouncedContentSearchQuery] = useState<string>("");
+  const debouncedContentSearch = useCallback(debounce(query => setDebouncedContentSearchQuery(query), 1000), [setDebouncedContentSearchQuery])
+  const searchContent = useCallback((query: string) => {
+    setContentSearchQuery(query);
+    debouncedContentSearch(query);
+  }, [debouncedContentSearch]);
+
+  useEffect(() => {
+    searchContentType(debouncedContentSearchQuery ?? undefined).then(setAvailableContent);
+  }, [debouncedContentSearchQuery])
+
+  const [templateSearchQuery, setTemplateSearchQuery] = useState<string | undefined>(undefined);
+  const [debouncedTemplateSearchQuery, setDebouncedTemplateSearchQuery] = useState<string>("");
+  const debouncedTemplateSearch = useCallback(debounce(query => setDebouncedTemplateSearchQuery(query), 1000), [setDebouncedTemplateSearchQuery])
+  const searchTemplates = useCallback((query: string) => {
+    setTemplateSearchQuery(query);
+    debouncedTemplateSearch(query);
+  }, [debouncedTemplateSearch]);
+
+  useEffect(() => {
+    searchForTemplate(debouncedTemplateSearchQuery ?? undefined).then(setAvailableTemplates);
+  }, [debouncedTemplateSearchQuery])
+
 
   const { allowedActions, isLoading, error } = useRBAC([{ action: `plugin::${PLUGIN_ID}.settings.modify`, subject: null }])
   // const permissions = useAuth('SettingsPage', (state) => state.permissions);
@@ -196,13 +241,64 @@ const SettingsPageInner = () => {
                     </Field.Root>
                   </Box>
                   <Box paddingRight={6}>
+                    <Field.Root name="templateId" style={{ flexGrow: 1 }}>
+                      <Field.Label>
+                        {t("settings.card.default_template")}
+                      </Field.Label>
+                      <Combobox
+                        autocomplete="none"
+                        onTextValueChange={(value: string) => searchTemplates(value)}
+                        textValue={templateSearchQuery || availableTemplates?.find(t => t.documentId === defaultTemplateId)?.shortName || ""}
+                        defaultTextValue={availableTemplates?.find(t => t.documentId === defaultTemplateId)?.shortName || ""}
+                        onChange={(value: string) => {
+                          setTemplateSearchQuery("")
+                          setDebouncedTemplateSearchQuery("")
+                          setDefaultTemplateId(value)
+                        }}
+                        value={defaultTemplateId || ""}
+                        placeholder={t("editor.header.search_template")}
+                        // createDisabled={true}
+                        size="S"
+                        onClear={() => {
+                          setTemplateSearchQuery("");
+                          setDebouncedTemplateSearchQuery("")
+                        }}>
+                        {availableTemplates?.map(template => (<ComboboxOption key={template.documentId} value={template.documentId} textValue={template.shortName} selected={template.documentId === defaultTemplateId}
+                          style={isDarkMode ? { color: "#fff" } : undefined}
+                        >{template.shortName}</ComboboxOption>))}
+                      </Combobox>
+                    </Field.Root>
+                  </Box>
+                  <Box paddingRight={6}>
                     <Field.Root name="contentId" style={{ flexGrow: 1 }}>
                       <Field.Label>
                         {t("settings.card.default_content")}
                       </Field.Label>
-                      <SingleSelect style={{ flexGrow: 1 }} loading={contentLoading} disabled={!defaultContentType} value={defaultContentId} onChange={(e: string) => setDefaultContentId(e)}>
+                      {/* <SingleSelect style={{ flexGrow: 1 }} loading={contentLoading} disabled={!defaultContentType} value={defaultContentId} onChange={(e: string) => setDefaultContentId(e)}>
                         {availableContent.map((content) => (<SingleSelectOption key={content.documentId} value={content.documentId}>{content.title}</SingleSelectOption>))}
-                      </SingleSelect>
+                      </SingleSelect> */}
+                      <Combobox
+                        autocomplete="none"
+                        onTextValueChange={(value: string) => searchContent(value)}
+                        textValue={contentSearchQuery || availableContent?.find(c => c.documentId === defaultContentId)?.title || ""}
+                        defaultTextValue={availableContent?.find(c => c.documentId === defaultContentId)?.title || ""}
+                        onChange={(value: string) => {
+                          setContentSearchQuery("")
+                          setDebouncedContentSearchQuery("")
+                          setDefaultContentId(value)
+                        }}
+                        value={defaultContentId || ""}
+                        placeholder={t("editor.header.search_content")}
+                        // createDisabled={true}
+                        size="S"
+                        onClear={() => {
+                          setContentSearchQuery("");
+                          setDebouncedContentSearchQuery("")
+                        }}>
+                        {availableContent?.map(content => (<ComboboxOption key={content.documentId} value={content.documentId} textValue={content.title} selected={content.documentId === defaultContentId}
+                          style={isDarkMode ? { color: "#fff" } : undefined}
+                        >{content.title}</ComboboxOption>))}
+                      </Combobox>
                     </Field.Root>
                   </Box>
                   <Box paddingRight={6}>

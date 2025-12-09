@@ -35,7 +35,6 @@ const getContentByTemplateId = async (strapi: Core.Strapi, contentType: string, 
       limit: 10,
     }
     const content = await strapi.documents(foundContentType.uid)?.findMany(request);
-    console.log('[Page Builder] getContentByTemplateId results', content.length);
 
     return (content || []).map((document) => ({ documentId: document.documentId, title: mainField ? document[mainField] : document.documentId }));
   } catch (error) {

@@ -11,11 +11,13 @@ const getSettingsHandler = async (strapi: Core.Strapi) => {
   const settings = queryData?.[0];
   const apiKey = settings?.apiKey;
   const contentType = settings?.defaultContentType;
+  const templateId = settings?.defaultTemplateId;
   const contentId = settings?.defaultContentId;
   const enforceTemplateShape = settings?.enforceTemplateShape ?? true;
   return {
     apiKey,
     contentType,
+    templateId,
     contentId,
     enforceTemplateShape,
   };

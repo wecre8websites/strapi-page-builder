@@ -43,6 +43,14 @@ export default {
         policies: [`plugin::${PLUGIN_ID}.editorRead`],
       },
     },
+    {
+      method: 'POST',
+      path: '/editor/content/:contentType/templates',
+      handler: 'editor.getTemplates',
+      config: {
+        policies: [`plugin::${PLUGIN_ID}.editorRead`],
+      },
+    },
     // {
     //   method: 'POST',
     //   path: '/editor/content/:contentType/:documentId',
