@@ -1,13 +1,14 @@
-import { Box, Button, Combobox, ComboboxOption, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, Switch, TextInput, Typography, darkTheme, lightTheme } from '@strapi/design-system';
+import { Box, Button, DesignSystemProvider, Dialog, Field, Flex, Grid, IconButton, JSONInput, Link, Loader, Main, Modal, SingleSelect, SingleSelectOption, Switch, TextInput, Typography, darkTheme, lightTheme } from '@strapi/design-system';
 import { Code, CrossCircle, Question, Search, WarningCircle } from '@strapi/icons';
 import { Page, useFetchClient, useRBAC } from '@strapi/strapi/admin';
-import debounce from 'lodash.debounce';
 import { ArrowLeft, ArrowRight, File, FileAudio, FileImage, FileVideo, Package, Save } from 'lucide-react';
 import { ChangeEvent, FC, JSX, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GetEditorDataResponse from '../../../shared/types/GetEditorDataResponse';
 import SaveTemplateRequest from "../../../shared/types/SaveTemplateRequest";
 import SimplifiedContentType from '../../../shared/types/SimplifiedContentType';
 import StrapiImageResponse from '../../../shared/types/StrapiImageResponse';
+import debounce from 'lodash.debounce';
+import SearchCombobox from '../components/SearchCombobox';
 import useTranslation from '../hooks/useTranslation';
 import LeftSidebar from '../icons/LeftSidebar';
 import Redo from '../icons/Redo';
@@ -71,7 +72,10 @@ const defaultTemplateJson = { content: [], root: {}, zones: {} };
 
 const sendIframeMessage = (iframe: HTMLIFrameElement, message: ParentMessageEvent) => {
   if (!iframe) return;
-  iframe?.contentWindow?.postMessage(message, '*');
+  // target the editor's own origin (derived from the iframe src) rather than '*'
+  let origin = '*';
+  try { origin = new URL(iframe.src).origin; } catch { return; }
+  iframe.contentWindow?.postMessage(message, origin);
 }
 
 const HomePageInner = () => {
@@ -145,30 +149,6 @@ const HomePageInner = () => {
   // const [contentType, setContentType] = useState(contentType ?? "");
   const [availableTemplates, setAvailableTemplates] = useState<GetEditorDataResponse["templateDocuments"]>([]);
   const [availableContent, setAvailableContent] = useState<GetEditorDataResponse["contentDocuments"]>([]);
-  const [contentSearchQuery, setContentSearchQuery] = useState<string | undefined>(undefined);
-  const [debouncedContentSearchQuery, setDebouncedContentSearchQuery] = useState<string>("");
-  const debouncedContentSearch = useCallback(debounce(query => setDebouncedContentSearchQuery(query), 1000), [setDebouncedContentSearchQuery])
-  const searchContent = useCallback((query: string) => {
-    setContentSearchQuery(query);
-    debouncedContentSearch(query);
-  }, [debouncedContentSearch]);
-
-  useEffect(() => {
-    searchContentType(debouncedContentSearchQuery ?? undefined).then(setAvailableContent);
-  }, [debouncedContentSearchQuery])
-
-  const [templateSearchQuery, setTemplateSearchQuery] = useState<string | undefined>(undefined);
-  const [debouncedTemplateSearchQuery, setDebouncedTemplateSearchQuery] = useState<string>("");
-  const debouncedTemplateSearch = useCallback(debounce(query => setDebouncedTemplateSearchQuery(query), 1000), [setDebouncedTemplateSearchQuery])
-  const searchTemplates = useCallback((query: string) => {
-    setTemplateSearchQuery(query);
-    debouncedTemplateSearch(query);
-  }, [debouncedTemplateSearch]);
-
-  useEffect(() => {
-    searchForTemplate(debouncedTemplateSearchQuery ?? undefined).then(setAvailableTemplates);
-  }, [debouncedTemplateSearchQuery])
-
 
   // const [locale, setLocale] = useState<string | undefined>(locale ?? undefined);
   const isDefaultLocale = useMemo(() => locale && (availableLocales || [])?.find(l => l.isDefault)?.code === locale, [locale, availableLocales])
@@ -221,6 +201,11 @@ const HomePageInner = () => {
     const { data } = await post<{ documentId: string; shortName: any; }[]>(`/${PLUGIN_ID}/editor/content/${contentType}/templates`, { searchQuery, locale });
     return data
   }, [locale, contentType]);
+
+  const templateOptions = useCallback(async (query: string) =>
+    ((await searchForTemplate(query)) || []).map(t => ({ value: t.documentId, label: t.shortName })), [searchForTemplate]);
+  const contentOptions = useCallback(async (query: string) =>
+    ((await searchContentType(query)) || []).map(c => ({ value: c.documentId, label: String(c.title ?? c.documentId) })), [searchContentType]);
 
   const getEditorData = useCallback(async (data?: { contentType?: string, templateId?: string, contentId?: string, locale?: string, searchQuery?: string }) => {
     // if (data?.templateId !== "" && data?.templateId !== null && data?.templateId !== "i4504elrenii3m63c08eb8zp") throw new Error("Invalid template ID - getEditorData function - function params");
@@ -343,7 +328,7 @@ const HomePageInner = () => {
       window.history.replaceState({}, 'Page Builder', windowUrl.toString());
 
     }
-  }, [contentType, templateId, contentId, locale, debouncedContentSearchQuery, availableContent])
+  }, [contentType, templateId, contentId, locale, availableContent])
 
   const confirmChange = useCallback(async (callback: () => any) => {
     if (isDirty) {
@@ -448,8 +433,12 @@ const HomePageInner = () => {
 
   useEffect(() => {
     const messageHandler = (event: MessageEvent<ChildMessageEvent>) => {
+      // only accept messages from the editor iframe, at the editor's origin
+      const frame = iframeRef.current;
+      if (!frame || event.source !== frame.contentWindow) return;
+      try { if (event.origin !== new URL(frame.src).origin) return; } catch { return; }
       const message = event.data;
-      switch (message.type) {
+      switch (message?.type) {
         case ChildMessageType.CHILD_READY: {
           handlePopulate();
           break;
@@ -524,34 +513,17 @@ const HomePageInner = () => {
                 <hr />
                 <SingleSelectOption value="___new">{t("editor.header.create_new")}</SingleSelectOption>
               </SingleSelect>*/}
-              <Combobox
-                autocomplete="none"
-                onTextValueChange={(value: string) => searchTemplates(value)}
-                textValue={templateSearchQuery || availableTemplates?.find(t => t.documentId === templateId)?.shortName || ""}
-                defaultTextValue={availableTemplates?.find(t => t.documentId === templateId)?.shortName || ""}
+              <SearchCombobox
+                size="S"
+                placeholder={t("editor.header.search_template")}
+                value={templateId || ""}
+                fetchOptions={templateOptions}
+                optionStyle={isDarkMode ? { color: "#fff" } : undefined}
+                trailingOptions={[{ value: "___new", label: t("editor.header.create_new") }]}
                 onChange={(value: string) => {
                   if (value === "___new") confirmChange(() => openDialog("createNewTemplate"))
-                  else confirmChange(() => {
-                    setTemplateSearchQuery("")
-                    setDebouncedTemplateSearchQuery("")
-                    handleChange({ target: "templateId", value })
-                  })
-                }}
-                value={templateId || ""}
-                placeholder={t("editor.header.search_template")}
-                // createDisabled={true}
-                size="S"
-                onClear={() => {
-                  setTemplateSearchQuery("");
-                  setDebouncedTemplateSearchQuery("")
-                }}>
-                {availableTemplates?.map(template => (<ComboboxOption key={template.documentId} value={template.documentId} textValue={template.shortName} selected={template.documentId === templateId}
-                  style={isDarkMode ? { color: "#fff" } : undefined}
-                >{template.shortName}</ComboboxOption>))}
-                <ComboboxOption key="___new" value="___new" textValue={t("editor.header.create_new")}
-                  style={isDarkMode ? { color: "#fff" } : undefined}
-                >{t("editor.header.create_new")}</ComboboxOption>
-              </Combobox>
+                  else if (value) confirmChange(() => handleChange({ target: "templateId", value }))
+                }} />
             </Field.Root>
             <Field.Root name="contentType">
               <Field.Label style={isDarkMode ? { color: "#c0c0cf" } : {}}>
@@ -560,28 +532,13 @@ const HomePageInner = () => {
                   <IconButton onClick={() => openModal("contentJson", JSON.stringify(contentData || {}, null, 2))} label={t("editor.header.show_content_data")} variant="ghost" size={6}><Code height={12} /></IconButton>
                 </Flex>
               </Field.Label>
-              <Combobox
-                autocomplete="none"
-                onTextValueChange={(value: string) => searchContent(value)}
-                textValue={contentSearchQuery || availableContent?.find(c => c.documentId === contentId)?.title || ""}
-                defaultTextValue={availableContent?.find(c => c.documentId === contentId)?.title || ""}
-                onChange={(value: string) => confirmChange(() => {
-                  setContentSearchQuery("")
-                  setDebouncedContentSearchQuery("")
-                  handleChange({ target: "contentId", value })
-                })}
-                value={contentId || ""}
-                placeholder={t("editor.header.search_content")}
-                // createDisabled={true}
+              <SearchCombobox
                 size="S"
-                onClear={() => {
-                  setContentSearchQuery("");
-                  setDebouncedContentSearchQuery("")
-                }}>
-                {availableContent?.map(content => (<ComboboxOption key={content.documentId} value={content.documentId} textValue={content.title} selected={content.documentId === contentId}
-                  style={isDarkMode ? { color: "#fff" } : undefined}
-                >{content.title}</ComboboxOption>))}
-              </Combobox>
+                placeholder={t("editor.header.search_content")}
+                value={contentId || ""}
+                fetchOptions={contentOptions}
+                optionStyle={isDarkMode ? { color: "#fff" } : undefined}
+                onChange={(value: string) => { if (value) confirmChange(() => handleChange({ target: "contentId", value })) }} />
               {/* <SingleSelect size="S" placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>
                 {(availableContent || []).map((content) => (<SingleSelectOption key={content.documentId} value={content.documentId}>{content.title}</SingleSelectOption>))}
               </SingleSelect> */}
@@ -744,10 +701,12 @@ const HomePageInner = () => {
                     <Field.Label>
                       {t("editor.modals.template.duplicate_existing")}
                     </Field.Label>
-                    <SingleSelect placeholder={t("editor.modals.template.available_templates")} value={duplicateId || "none"} onChange={(value: string) => setDuplicateId(value === "none" ? "" : value)}>
-                      <SingleSelectOption value="none">{t("editor.modals.template.blank")}</SingleSelectOption>
-                      {(availableTemplates || []).map((template) => (<SingleSelectOption key={template.documentId} value={template.documentId}>{template.shortName}</SingleSelectOption>))}
-                    </SingleSelect>
+                    <SearchCombobox
+                      placeholder={t("editor.modals.template.available_templates")}
+                      value={duplicateId || "none"}
+                      fetchOptions={templateOptions}
+                      leadingOptions={[{ value: "none", label: t("editor.modals.template.blank") }]}
+                      onChange={(value: string) => setDuplicateId(value === "none" ? "" : value)} />
                   </Field.Root>
                 </Flex>
               </div>
