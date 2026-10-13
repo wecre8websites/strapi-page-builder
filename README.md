@@ -1,5 +1,5 @@
 <div align="center">
-   <img alt="Page Builder" width="60" src="static/pagebuilder_logo.png">
+   <img alt="Page Builder" width="60" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_logo.png">
 </div>
 <h1 align="center">Page Builder</h1>
 <p align="center">Visual, drag and drop page editor for Strapi.</p>
@@ -18,7 +18,7 @@
 
 <br>
 
-<img style="width: 100%; height: auto;" src="static/pagebuilder_animation.gif" alt="Page Builder Overview" /> <br/>
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_animation.gif" alt="Page Builder Overview" /> <br/>
 
 <br/><br/>
 
@@ -102,7 +102,7 @@ You can easily configure the Page Builder plugin to connect to your website.
 - Click on Save and check the connection.
 
 <br/><br/>
-<img style="width: 100%; height: auto;" src="static/pagebuilder_settings.png" alt="Page Builder Settings" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_settings.png" alt="Page Builder Settings" />
 <br/><br/>
 
 <br/>
@@ -112,11 +112,11 @@ You can easily configure the Page Builder plugin to connect to your website.
 Configure user roles to allow or limit access to Page Builder
 
 - To allow a role to view or change the template assigned to a content type, add the ` Template -> Read ` permission.
-<img style="width: 100%; height: auto;" src="static/pagebuilder_rbac_1.png" alt="Page Builder Role-based access control - Template" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_rbac_1.png" alt="Page Builder Role-based access control - Template" />
 - Choose whether the use can view, edit content only or add and remove components from templates.
-<img style="width: 100%; height: auto;" src="static/pagebuilder_rbac_2.png" alt="Page Builder Role-based access control - Editor" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_rbac_2.png" alt="Page Builder Role-based access control - Editor" />
 - Allow or restrict access to Page Builder settings
-<img style="width: 100%; height: auto;" src="static/pagebuilder_rbac_3.png" alt="Page Builder Role-based access control - Settings" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_rbac_3.png" alt="Page Builder Role-based access control - Settings" />
 
 <br/><br/>
 
@@ -129,11 +129,11 @@ After configuring Page Builder, you must add a template relation field to any co
 1. Click on **Content-Type Builder** from the Strapi sidebar.
 1. Choose a content type to modify. Both collection types and single types can be used
 1. Add a relation field to the content type
-<img style="width: 100%; height: auto;" src="static/pagebuilder_content_type_1.png" alt="Add field" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_content_type_1.png" alt="Add field" />
 1. Choose **Template (from: strapi-page-builder)** in the drop down menu and ensure the relation is set to **has one Template**. Give your field a name, such as "template".
-<img style="width: 100%; height: auto;" src="static/pagebuilder_content_type_2.png" alt="Add field" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_content_type_2.png" alt="Add field" />
 1. Click on finish.
-<img style="width: 100%; height: auto;" src="static/pagebuilder_content_type_3.png" alt="Add field" />
+<img style="width: 100%; height: auto;" src="https://raw.githubusercontent.com/wecre8websites/strapi-page-builder/master/static/pagebuilder_content_type_3.png" alt="Add field" />
 
 <br/>
 
