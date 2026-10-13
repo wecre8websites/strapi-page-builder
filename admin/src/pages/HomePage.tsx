@@ -427,8 +427,15 @@ const HomePageInner = () => {
 
   const handleRequestContent = useCallback(async (target: string, contentType: string, searchQuery?: string, titleField?: string) => {
     if (!iframeRef.current) return;
-    const { data } = await post(`/${PLUGIN_ID}/editor/content/${contentType}`, { searchQuery, locale, titleField });
-    sendIframeMessage(iframeRef.current, { type: ParentMessageType.RETURN_CONTENT, data: { target, content: data } });
+    // contentType comes from the iframe and is interpolated into an admin API path: allow a uid only (no slashes)
+    if (typeof contentType !== "string" || !/^[\w.:-]+$/.test(contentType)) return;
+    try {
+      const { data } = await post(`/${PLUGIN_ID}/editor/content/${contentType}`, { searchQuery, locale, titleField });
+      sendIframeMessage(iframeRef.current, { type: ParentMessageType.RETURN_CONTENT, data: { target, content: data } });
+    } catch (error) {
+      // forbidden or failed lookups show an empty list instead of an unhandled rejection
+      sendIframeMessage(iframeRef.current, { type: ParentMessageType.RETURN_CONTENT, data: { target, content: [] } });
+    }
   }, [locale])
 
   useEffect(() => {

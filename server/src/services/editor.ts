@@ -239,6 +239,12 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
     if (saveType === "create" && !data.contentType) return { error: "Content type is required for create" }
     if (saveType === "create" && !data.templateName) return { error: "Template name is required for create" }
 
+    if (saveType === "create") {
+      // only content types that can have templates (same list the editor offers) are accepted
+      const available = await getContentTypesHandler(strapi, true) as SettingsContentType[];
+      if (!available.some((contentType) => contentType.uid === data.contentType)) return { error: `Content type ${data.contentType} is not available for templates` }
+    }
+
     const locales = await getAvailableLocalesHandler(strapi);
     const defaultLocale = locales.find(l => l.isDefault)?.code || data?.locale || undefined;
     try {
@@ -259,6 +265,7 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
                 populate: "*"
               });
               if (duplicateDoc) {
+                if (duplicateDoc.contentType !== data.contentType) return { error: "The template to duplicate belongs to a different content type" }
                 json = { ...json, ...duplicateDoc?.json };
               }
             } catch (error) {
