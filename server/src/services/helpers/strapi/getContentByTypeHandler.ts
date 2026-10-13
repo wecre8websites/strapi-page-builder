@@ -24,4 +24,17 @@ const getContentByTypeHandler = async (strapi: Core.Strapi, contentType: string,
   }
 }
 
+/** Title of one entry, so the editor can label the entry it has open even when a search or list would not include it. */
+export const getContentTitle = async (strapi: Core.Strapi, contentType: string, documentId: string, locale?: string) => {
+  try {
+    const foundContentType = strapi.contentTypes[contentType];
+    if (!foundContentType || !documentId) return null;
+    const mainField = await safeTitleField(strapi, foundContentType.uid, undefined);
+    const document = await strapi.documents(foundContentType.uid)?.findOne({ documentId, locale, fields: ["documentId", mainField] } as any);
+    return document ? { documentId: document.documentId, title: document[mainField] ?? document.documentId } : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 export default getContentByTypeHandler;

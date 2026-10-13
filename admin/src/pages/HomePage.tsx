@@ -48,7 +48,8 @@ enum ChildMessageType {
   SAVE_TEMPLATE = 'save_template',
   TEMPLATE_DIRTY = 'template_dirty',
   REQUEST_MEDIA = "request_media",
-  REQUEST_CONTENT = "request_content"
+  REQUEST_CONTENT = "request_content",
+  NAVIGATE = "navigate_request"
 }
 
 interface ChildMessageEvent {
@@ -464,6 +465,22 @@ const HomePageInner = () => {
           openMediaModal(message.data as { target: string, value?: string, type: MediaType });
           break;
         }
+        case ChildMessageType.NAVIGATE: {
+          // the preview followed a link: open the entry the site says that page is built from
+          const { contentType: toType, contentId: toId, templateId: toTemplate, locale: toLocale } = message.data as { [key: string]: unknown };
+          const safe = (value: unknown, pattern: RegExp) => typeof value === "string" && pattern.test(value);
+          if (!safe(toType, /^[\w.:-]+$/) || !safe(toId, /^[\w-]+$/)) break;
+          confirmChange(() => {
+            const next = new URL(window.location.href);
+            next.searchParams.set("_contentType", toType as string);
+            next.searchParams.set("_contentId", toId as string);
+            if (safe(toTemplate, /^[\w-]+$/)) next.searchParams.set("_templateId", toTemplate as string); else next.searchParams.delete("_templateId");
+            if (safe(toLocale, /^[A-Za-z_-]{1,20}$/)) next.searchParams.set("_locale", toLocale as string);
+            setChildReady(false);
+            window.history.replaceState({}, "Page Builder", next.toString());
+          });
+          break;
+        }
         case ChildMessageType.REQUEST_CONTENT: {
           const { target, contentType, searchQuery, titleField } = message.data;
           handleRequestContent(target, contentType, searchQuery, titleField);
@@ -476,7 +493,7 @@ const HomePageInner = () => {
       window.removeEventListener('message', messageHandler);
       // iframeRef.current && iframeRef.current.addEventListener('load', loadListener);
     }
-  }, [handleSave, handlePopulate]);
+  }, [handleSave, handlePopulate, confirmChange]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -525,6 +542,7 @@ const HomePageInner = () => {
                 placeholder={t("editor.header.search_template")}
                 value={templateId || ""}
                 fetchOptions={templateOptions}
+                knownOptions={(availableTemplates || []).map(t => ({ value: t.documentId, label: t.shortName }))}
                 optionStyle={isDarkMode ? { color: "#fff" } : undefined}
                 trailingOptions={[{ value: "___new", label: t("editor.header.create_new") }]}
                 onChange={(value: string) => {
@@ -544,6 +562,7 @@ const HomePageInner = () => {
                 placeholder={t("editor.header.search_content")}
                 value={contentId || ""}
                 fetchOptions={contentOptions}
+                knownOptions={(availableContent || []).map(c => ({ value: c.documentId, label: String(c.title ?? c.documentId) }))}
                 optionStyle={isDarkMode ? { color: "#fff" } : undefined}
                 onChange={(value: string) => { if (value) confirmChange(() => handleChange({ target: "contentId", value })) }} />
               {/* <SingleSelect size="S" placeholder={t("editor.header.select_content")} value={contentId || ""} onChange={(value: string) => confirmChange(() => handleChange({ target: "contentId", value }))}>

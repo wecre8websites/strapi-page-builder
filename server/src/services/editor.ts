@@ -12,7 +12,7 @@ import getContentHandler from "./helpers/strapi/getContentHandler";
 import getSettingsHandler from "./helpers/strapi/getSettingsHandler";
 import getTemplateHandler from "./helpers/strapi/getTemplateHandler";
 import getTemplatesByContentTypeHandler from "./helpers/strapi/getTemplatesByContentTypeHandler";
-import getContentByTypeHandler from "./helpers/strapi/getContentByTypeHandler";
+import getContentByTypeHandler, { getContentTitle } from "./helpers/strapi/getContentByTypeHandler";
 import getAvailableLocalesHandler from "./helpers/strapi/getAvailableLocalesHandler";
 import saveLicenceSettings from "./helpers/license/saveLicenceSettings";
 import getContentByTemplateId from "./helpers/strapi/getContentByTemplateId";
@@ -186,6 +186,11 @@ const editor = factories.createCoreService(`plugin::${PLUGIN_ID}.editor`, ({ str
         t.documentId === contentDocument.documentId
       ))
     );
+    // the entry that is open must be in the list, or the Preview content picker cannot show its title
+    if (selectedContentId && !contentDocuments.some((contentDocument) => contentDocument.documentId === selectedContentId)) {
+      const selectedTitle = await getContentTitle(strapi, selectedContentType, selectedContentId, locale);
+      if (selectedTitle) contentDocuments.unshift(selectedTitle as any);
+    }
     const firstContentId = contentDocuments?.[0]?.documentId;
 
     let contentResult: Awaited<ReturnType<typeof getContentHandler>>

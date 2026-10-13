@@ -15,19 +15,21 @@ type Props = {
   leadingOptions?: SearchOption[];
   trailingOptions?: SearchOption[];
   disabled?: boolean;
+  /** Options the parent already has (e.g. the selected entry), so its label shows even when a search would not return it. */
+  knownOptions?: SearchOption[];
 };
 
 /**
  * Searchable, self-contained combobox. Owns its query and results so a search here can never narrow
  * another control's list, and remembers labels so the selected item keeps its name while searching.
  */
-export default function SearchCombobox({ value, onChange, fetchOptions, placeholder, size = 'S', optionStyle, leadingOptions = [], trailingOptions = [], disabled }: Props) {
+export default function SearchCombobox({ value, onChange, fetchOptions, placeholder, size = 'S', optionStyle, leadingOptions = [], trailingOptions = [], disabled, knownOptions = [] }: Props) {
   const [query, setQuery] = useState<string | undefined>(undefined);
   const [options, setOptions] = useState<SearchOption[]>([]);
   const [loading, setLoading] = useState(false);
   const labels = useRef<Record<string, string>>({});
   const request = useRef(0);
-  [...leadingOptions, ...trailingOptions, ...options].forEach(o => { labels.current[o.value] = o.label });
+  [...knownOptions, ...leadingOptions, ...trailingOptions, ...options].forEach(o => { labels.current[o.value] = o.label });
   const selectedLabel = labels.current[value] ?? '';
 
   // typing the selected label back (Combobox echoes it on select) is not a search
