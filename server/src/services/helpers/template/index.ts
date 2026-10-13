@@ -4,8 +4,8 @@ const matchTemplateShape = (primary: PBTemplateConfig, secondary: PBTemplateConf
 
   const root = componentHandler({ parentComponent: { ...primary.root, type: "_ROOT" } as TemplateComponentType, childComponent: { ...secondary.root, type: "_ROOT" } as TemplateComponentType | undefined, componentsConfig: { "_ROOT": config.root } as any as { [key: string]: ConfigComponentType } });
 
-  const zones = Object.entries(primary.zones as { [key: string]: TemplateComponentType[] }).reduce((acc, [zoneKey, parentZoneComponents]) => {
-    const childZoneComponents = (secondary.zones as { [key: string]: TemplateComponentType[] })[zoneKey];
+  const zones = Object.entries((primary.zones || {}) as { [key: string]: TemplateComponentType[] }).reduce((acc, [zoneKey, parentZoneComponents]) => {
+    const childZoneComponents = ((secondary.zones || {}) as { [key: string]: TemplateComponentType[] })[zoneKey];
     if (!childZoneComponents) {
       return {
         ...acc,

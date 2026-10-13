@@ -147,3 +147,9 @@ For the Page Editor plugin to be able to connect to your site, you must add the 
 [MIT License](LICENSE.md)
 
 Copyright © 2025 [wecre8websites](https://www.wecre8websites.com)
+
+## Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PAGE_BUILDER_SLOT_MIGRATION` | off | Set to `true` to expose the template migration endpoints used by `strapi-page-builder-migrate-slots` (DropZones to slots). They return 404 otherwise. Unset it once your templates are migrated. |

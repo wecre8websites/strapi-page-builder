@@ -59,5 +59,22 @@ export const contentApi = {
         policies: [],
       },
     },
+    // DropZone -> slots migration. Handlers return 404 unless PAGE_BUILDER_SLOT_MIGRATION=true.
+    {
+      method: 'GET',
+      path: '/migration/templates',
+      handler: `plugin::${PLUGIN_ID}.template.migrationList`,
+      config: {
+        policies: [],
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/migration/templates/:documentId',
+      handler: `plugin::${PLUGIN_ID}.template.migrationUpdate`,
+      config: {
+        policies: [],
+      },
+    },
   ]
 }
